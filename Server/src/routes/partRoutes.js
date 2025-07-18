@@ -4,12 +4,13 @@ const {
   getParts,
   createPart,
   updatePart,
-  deletePart
+  deletePart,
 } = require('../controllers/partController');
+const { protect, adminOnly } = require('../middleware/authMiddleware');
 
-router.get('/', getParts);    // optionally: add authMiddleware here
-router.post('/', protect, createPart);
-router.put('/:id', protect, updatePart);
-router.delete('/:id', protect, deletePart);
+router.get('/', getParts); // public
+router.post('/', protect, adminOnly, createPart); // admin
+router.put('/:id', protect, adminOnly, updatePart); // admin
+router.delete('/:id', protect, adminOnly, deletePart); // admin
 
 module.exports = router;
