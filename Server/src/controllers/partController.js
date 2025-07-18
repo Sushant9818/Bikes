@@ -1,26 +1,61 @@
-const BikePart = require('../models/BikePart');
+const Part = require('../models/Parts');
 
-// GET all parts
-exports.getParts = async (req, res) => {
-  const parts = await BikePart.find();
-  res.json(parts);
+// @desc    Get all parts (public)
+const getParts = async (req, res) => {
+  try {
+    const parts = await Part.find();
+    res.json(parts);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
 };
 
-// POST new part
-exports.createPart = async (req, res) => {
-  const part = new BikePart(req.body);
-  await part.save();
-  res.status(201).json(part);
+// @desc    Create new part (admin only)
+const createPart = async (req, res) => {
+  const { name, imageUrl, category, price,quantity, inStock } = req.body;
+
+  if (!name || price == null) {
+    return res.status(400).json({ message: 'Name and price are required' });
+  }
+
+  try {
+    const newPart = new Part({ name, imageUrl, category, price,quantity, inStock });
+    await newPart.save();
+    res.status(201).json(newPart);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Failed to create part' });
+  }
 };
 
-// PUT update part
-exports.updatePart = async (req, res) => {
-  const part = await BikePart.findByIdAndUpdate(req.params.id, req.body, { new: true });
-  res.json(part);
+// @desc    Update part (admin only)
+const updatePart = async (req, res) => {
+  try {
+    const updated = await Part.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updated) return res.status(404).json({ message: 'Part not found' });
+    res.json(updated);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Failed to update part' });
+  }
 };
 
-// DELETE part
-exports.deletePart = async (req, res) => {
-  await BikePart.findByIdAndDelete(req.params.id);
-  res.json({ message: 'Part deleted' });
+// @desc    Delete part (admin only)
+const deletePart = async (req, res) => {
+  try {
+    const deleted = await Part.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'Part not found' });
+    res.json({ message: 'Part deleted' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Failed to delete part' });
+  }
+};
+
+module.exports = {
+  getParts,
+  createPart,
+  updatePart,
+  deletePart,
 };
