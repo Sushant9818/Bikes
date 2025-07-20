@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const authRoutes = require('./routes/auth');
 const partRoutes = require('./routes/partRoutes'); // ✅ Make sure this is declared only once
 const utilsRoutes = require('./routes/utilsRoutes');
+const bikeRoutes = require('./routes/bikeRoutes');
 dotenv.config();
 const app = express();
 
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/parts', partRoutes); // ✅ Route registration
 app.use('/api/utils', utilsRoutes);
+app.use('/api/bikes', bikeRoutes);
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
