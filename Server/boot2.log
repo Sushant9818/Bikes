@@ -1,0 +1,70 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------< com.suzuki.bike:suzuki-bike-management >---------------
+[INFO] Building Suzuki Bike Management System 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.2.0:run (default-cli) > test-compile @ suzuki-bike-management >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ suzuki-bike-management ---
+[INFO] Copying 2 resources from src/main/resources to target/classes
+[INFO] Copying 0 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ suzuki-bike-management ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ suzuki-bike-management ---
+[INFO] skip non existing resourceDirectory /Users/sushanprajapati/Desktop/React Project/Server/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ suzuki-bike-management ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] <<< spring-boot:3.2.0:run (default-cli) < test-compile @ suzuki-bike-management <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.2.0:run (default-cli) @ suzuki-bike-management ---
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.0)
+
+2026-02-12T19:50:41.626-08:00  INFO 14043 --- [suzuki-bike-management] [           main] com.suzuki.bike.SuzukiBikeApplication    : Starting SuzukiBikeApplication using Java 25.0.2 with PID 14043 (/Users/sushanprajapati/Desktop/React Project/Server/target/classes started by sushanprajapati in /Users/sushanprajapati/Desktop/React Project/Server)
+2026-02-12T19:50:41.626-08:00  INFO 14043 --- [suzuki-bike-management] [           main] com.suzuki.bike.SuzukiBikeApplication    : The following 1 profile is active: "dev"
+2026-02-12T19:50:41.815-08:00  INFO 14043 --- [suzuki-bike-management] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-12T19:50:41.838-08:00  INFO 14043 --- [suzuki-bike-management] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 20 ms. Found 3 JPA repository interfaces.
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by org.apache.tomcat.jni.Library in an unnamed module (file:/Users/sushanprajapati/.m2/repository/org/apache/tomcat/embed/tomcat-embed-core/10.1.16/tomcat-embed-core-10.1.16.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+2026-02-12T19:50:42.017-08:00  INFO 14043 --- [suzuki-bike-management] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8081 (http)
+2026-02-12T19:50:42.021-08:00  INFO 14043 --- [suzuki-bike-management] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-02-12T19:50:42.021-08:00  INFO 14043 --- [suzuki-bike-management] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.16]
+2026-02-12T19:50:42.037-08:00  INFO 14043 --- [suzuki-bike-management] [           main] o.a.c.c.C.[Tomcat].[localhost].[/api]    : Initializing Spring embedded WebApplicationContext
+2026-02-12T19:50:42.037-08:00  INFO 14043 --- [suzuki-bike-management] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 396 ms
+2026-02-12T19:50:42.049-08:00  INFO 14043 --- [suzuki-bike-management] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-02-12T19:50:42.114-08:00  INFO 14043 --- [suzuki-bike-management] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:suzuki_bike_db user=SA
+2026-02-12T19:50:42.115-08:00  INFO 14043 --- [suzuki-bike-management] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-02-12T19:50:42.119-08:00  INFO 14043 --- [suzuki-bike-management] [           main] o.s.b.a.h2.H2ConsoleAutoConfiguration    : H2 console available at '/h2-console'. Database available at 'jdbc:h2:mem:suzuki_bike_db'
+2026-02-12T19:50:42.171-08:00  INFO 14043 --- [suzuki-bike-management] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-02-12T19:50:42.187-08:00  INFO 14043 --- [suzuki-bike-management] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.3.1.Final
+2026-02-12T19:50:42.197-08:00  INFO 14043 --- [suzuki-bike-management] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-02-12T19:50:42.265-08:00  INFO 14043 --- [suzuki-bike-management] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-12T19:50:42.277-08:00  WARN 14043 --- [suzuki-bike-management] [           main] org.hibernate.dialect.Dialect            : HHH000511: The 2.2.0 version for [org.hibernate.dialect.PostgreSQLDialect] is no longer supported, hence certain features may not work properly. The minimum supported version is 11.0.0. Check the community dialects project for available legacy versions.
+2026-02-12T19:50:42.278-08:00  WARN 14043 --- [suzuki-bike-management] [           main] org.hibernate.orm.deprecation            : HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-02-12T19:50:42.519-08:00  INFO 14043 --- [suzuki-bike-management] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-02-12T19:50:42.531-08:00  INFO 14043 --- [suzuki-bike-management] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-02-12T19:50:42.639-08:00  INFO 14043 --- [suzuki-bike-management] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-02-12T19:50:42.964-08:00  INFO 14043 --- [suzuki-bike-management] [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@5e5d41dc, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@87f4794, org.springframework.security.web.context.SecurityContextHolderFilter@c9f1951, org.springframework.security.web.header.HeaderWriterFilter@fb74661, org.springframework.web.filter.CorsFilter@78a894fe, org.springframework.security.web.authentication.logout.LogoutFilter@8eb1297, com.suzuki.bike.config.JwtAuthenticationFilter@6b4125ed, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@3532f633, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@6d49bd08, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@146b3bc7, org.springframework.security.web.session.SessionManagementFilter@5ab780ce, org.springframework.security.web.access.ExceptionTranslationFilter@31829b82, org.springframework.security.web.access.intercept.AuthorizationFilter@fbb39ea]
+2026-02-12T19:50:43.052-08:00  INFO 14043 --- [suzuki-bike-management] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8081 (http) with context path '/api'
+2026-02-12T19:50:43.055-08:00  INFO 14043 --- [suzuki-bike-management] [           main] com.suzuki.bike.SuzukiBikeApplication    : Started SuzukiBikeApplication in 1.545 seconds (process running for 1.649)
+2026-02-12T19:54:09.668-08:00  INFO 14043 --- [suzuki-bike-management] [nio-8081-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/api]    : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-02-12T19:54:09.669-08:00  INFO 14043 --- [suzuki-bike-management] [nio-8081-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-02-12T19:54:09.674-08:00  INFO 14043 --- [suzuki-bike-management] [nio-8081-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 4 ms
+2026-02-12T19:54:09.719-08:00  WARN 14043 --- [suzuki-bike-management] [nio-8081-exec-2] o.s.w.s.h.HandlerMappingIntrospector     : Cache miss for REQUEST dispatch to '/api/auth/login' (previous null). Performing MatchableHandlerMapping lookup. This is logged once only at WARN level, and every time at TRACE.
