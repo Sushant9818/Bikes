@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Low Stock Alert</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    h1 { color: #E60012; }
+    .warning { background: #fff3cd; padding: 15px; border-radius: 5px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Low Stock Alert</h1>
+  <div class="warning">
+    <p><strong>Part:</strong> <span th:text="${part.partName}"></span></p>
+    <p><strong>Compatible Model:</strong> <span th:text="${part.compatibleModel != null ? part.compatibleModel : 'N/A'}"></span></p>
+    <p><strong>Current Quantity:</strong> <span th:text="${quantity}"></span></p>
+    <p>Please restock this part as soon as possible.</p>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,137 @@
+[INFO] Error stacktraces are turned on.
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------< com.suzuki.bike:suzuki-bike-management >---------------
+[INFO] Building Suzuki Bike Management System 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.2.0:run (default-cli) > test-compile @ suzuki-bike-management >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ suzuki-bike-management ---
+[INFO] Copying 2 resources from src/main/resources to target/classes
+[INFO] Copying 0 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ suzuki-bike-management ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ suzuki-bike-management ---
+[INFO] skip non existing resourceDirectory /Users/sushanprajapati/Desktop/React Project/Server/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ suzuki-bike-management ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] <<< spring-boot:3.2.0:run (default-cli) < test-compile @ suzuki-bike-management <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.2.0:run (default-cli) @ suzuki-bike-management ---
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.0)
+
+2026-02-12T20:02:59.801-08:00  INFO 22072 --- [suzuki-bike-management] [           main] com.suzuki.bike.SuzukiBikeApplication    : Starting SuzukiBikeApplication using Java 25.0.2 with PID 22072 (/Users/sushanprajapati/Desktop/React Project/Server/target/classes started by sushanprajapati in /Users/sushanprajapati/Desktop/React Project/Server)
+2026-02-12T20:02:59.802-08:00  INFO 22072 --- [suzuki-bike-management] [           main] com.suzuki.bike.SuzukiBikeApplication    : The following 1 profile is active: "dev"
+2026-02-12T20:02:59.984-08:00  INFO 22072 --- [suzuki-bike-management] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-12T20:03:00.006-08:00  INFO 22072 --- [suzuki-bike-management] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 19 ms. Found 3 JPA repository interfaces.
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by org.apache.tomcat.jni.Library in an unnamed module (file:/Users/sushanprajapati/.m2/repository/org/apache/tomcat/embed/tomcat-embed-core/10.1.16/tomcat-embed-core-10.1.16.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+2026-02-12T20:03:00.188-08:00  INFO 22072 --- [suzuki-bike-management] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 19090 (http)
+2026-02-12T20:03:00.192-08:00  INFO 22072 --- [suzuki-bike-management] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-02-12T20:03:00.192-08:00  INFO 22072 --- [suzuki-bike-management] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.16]
+2026-02-12T20:03:00.216-08:00  INFO 22072 --- [suzuki-bike-management] [           main] o.a.c.c.C.[Tomcat].[localhost].[/api]    : Initializing Spring embedded WebApplicationContext
+2026-02-12T20:03:00.216-08:00  INFO 22072 --- [suzuki-bike-management] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 402 ms
+2026-02-12T20:03:00.240-08:00  INFO 22072 --- [suzuki-bike-management] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-02-12T20:03:00.307-08:00  INFO 22072 --- [suzuki-bike-management] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:suzuki_bike_db user=SA
+2026-02-12T20:03:00.308-08:00  INFO 22072 --- [suzuki-bike-management] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-02-12T20:03:00.312-08:00  INFO 22072 --- [suzuki-bike-management] [           main] o.s.b.a.h2.H2ConsoleAutoConfiguration    : H2 console available at '/h2-console'. Database available at 'jdbc:h2:mem:suzuki_bike_db'
+2026-02-12T20:03:00.363-08:00  INFO 22072 --- [suzuki-bike-management] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-02-12T20:03:00.377-08:00  INFO 22072 --- [suzuki-bike-management] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.3.1.Final
+2026-02-12T20:03:00.386-08:00  INFO 22072 --- [suzuki-bike-management] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-02-12T20:03:00.461-08:00  INFO 22072 --- [suzuki-bike-management] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-12T20:03:00.471-08:00  WARN 22072 --- [suzuki-bike-management] [           main] org.hibernate.dialect.Dialect            : HHH000511: The 2.2.0 version for [org.hibernate.dialect.PostgreSQLDialect] is no longer supported, hence certain features may not work properly. The minimum supported version is 11.0.0. Check the community dialects project for available legacy versions.
+2026-02-12T20:03:00.473-08:00  WARN 22072 --- [suzuki-bike-management] [           main] org.hibernate.orm.deprecation            : HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-02-12T20:03:00.710-08:00  INFO 22072 --- [suzuki-bike-management] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-02-12T20:03:00.723-08:00  INFO 22072 --- [suzuki-bike-management] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-02-12T20:03:00.840-08:00  INFO 22072 --- [suzuki-bike-management] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-02-12T20:03:01.409-08:00  INFO 22072 --- [suzuki-bike-management] [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@42ffa0c8, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@54139bd3, org.springframework.security.web.context.SecurityContextHolderFilter@44a1e5d2, org.springframework.security.web.header.HeaderWriterFilter@45fa7f1a, org.springframework.web.filter.CorsFilter@19a652cd, org.springframework.security.web.authentication.logout.LogoutFilter@b8f6500, com.suzuki.bike.config.JwtAuthenticationFilter@186d8a71, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@136cd71b, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@631f188a, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@1cc07127, org.springframework.security.web.session.SessionManagementFilter@33e7ece5, org.springframework.security.web.access.ExceptionTranslationFilter@5f6b6f2, org.springframework.security.web.access.intercept.AuthorizationFilter@23f6a18d]
+2026-02-12T20:03:01.502-08:00  INFO 22072 --- [suzuki-bike-management] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 19090 (http) with context path '/api'
+2026-02-12T20:03:01.504-08:00  INFO 22072 --- [suzuki-bike-management] [           main] com.suzuki.bike.SuzukiBikeApplication    : Started SuzukiBikeApplication in 1.816 seconds (process running for 1.918)
+2026-02-12T20:11:24.203-08:00  INFO 22072 --- [suzuki-bike-management] [ionShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-02-12T20:11:24.208-08:00  INFO 22072 --- [suzuki-bike-management] [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-02-12T20:11:24.208-08:00  INFO 22072 --- [suzuki-bike-management] [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  08:25 min
+[INFO] Finished at: 2026-02-12T20:11:24-08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:3.2.0:run (default-cli) on project suzuki-bike-management: Process terminated with exit code: 143 -> [Help 1]
+org.apache.maven.lifecycle.LifecycleExecutionException: Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:3.2.0:run (default-cli) on project suzuki-bike-management: Process terminated with exit code: 143
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute2 (MojoExecutor.java:333)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute (MojoExecutor.java:316)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:212)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:174)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.access$000 (MojoExecutor.java:75)
+    at org.apache.maven.lifecycle.internal.MojoExecutor$1.run (MojoExecutor.java:162)
+    at org.apache.maven.plugin.DefaultMojosExecutionStrategy.execute (DefaultMojosExecutionStrategy.java:39)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:159)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:105)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:73)
+    at org.apache.maven.lifecycle.internal.builder.singlethreaded.SingleThreadedBuilder.build (SingleThreadedBuilder.java:53)
+    at org.apache.maven.lifecycle.internal.LifecycleStarter.execute (LifecycleStarter.java:118)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:261)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:173)
+    at org.apache.maven.DefaultMaven.execute (DefaultMaven.java:101)
+    at org.apache.maven.cli.MavenCli.execute (MavenCli.java:919)
+    at org.apache.maven.cli.MavenCli.doMain (MavenCli.java:285)
+    at org.apache.maven.cli.MavenCli.main (MavenCli.java:207)
+    at jdk.internal.reflect.DirectMethodHandleAccessor.invoke (DirectMethodHandleAccessor.java:104)
+    at java.lang.reflect.Method.invoke (Method.java:565)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launchEnhanced (Launcher.java:255)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launch (Launcher.java:201)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.mainWithExitCode (Launcher.java:361)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.main (Launcher.java:314)
+Caused by: org.apache.maven.plugin.MojoExecutionException: Process terminated with exit code: 143
+    at org.springframework.boot.maven.JavaProcessExecutor.run (JavaProcessExecutor.java:74)
+    at org.springframework.boot.maven.RunMojo.run (RunMojo.java:76)
+    at org.springframework.boot.maven.AbstractRunMojo.run (AbstractRunMojo.java:242)
+    at org.springframework.boot.maven.AbstractRunMojo.execute (AbstractRunMojo.java:209)
+    at org.apache.maven.plugin.DefaultBuildPluginManager.executeMojo (DefaultBuildPluginManager.java:126)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute2 (MojoExecutor.java:328)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute (MojoExecutor.java:316)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:212)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:174)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.access$000 (MojoExecutor.java:75)
+    at org.apache.maven.lifecycle.internal.MojoExecutor$1.run (MojoExecutor.java:162)
+    at org.apache.maven.plugin.DefaultMojosExecutionStrategy.execute (DefaultMojosExecutionStrategy.java:39)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:159)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:105)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:73)
+    at org.apache.maven.lifecycle.internal.builder.singlethreaded.SingleThreadedBuilder.build (SingleThreadedBuilder.java:53)
+    at org.apache.maven.lifecycle.internal.LifecycleStarter.execute (LifecycleStarter.java:118)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:261)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:173)
+    at org.apache.maven.DefaultMaven.execute (DefaultMaven.java:101)
+    at org.apache.maven.cli.MavenCli.execute (MavenCli.java:919)
+    at org.apache.maven.cli.MavenCli.doMain (MavenCli.java:285)
+    at org.apache.maven.cli.MavenCli.main (MavenCli.java:207)
+    at jdk.internal.reflect.DirectMethodHandleAccessor.invoke (DirectMethodHandleAccessor.java:104)
+    at java.lang.reflect.Method.invoke (Method.java:565)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launchEnhanced (Launcher.java:255)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launch (Launcher.java:201)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.mainWithExitCode (Launcher.java:361)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.main (Launcher.java:314)
+[ERROR] 
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

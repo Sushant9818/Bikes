@@ -1,0 +1,45 @@
+# H2 in-memory database for local dev (no PostgreSQL required)
+# Run with: mvn spring-boot:run -Dspring-boot.run.profiles=dev
+# Override: SERVER_PORT=8082 mvn spring-boot:run
+server:
+  port: ${SERVER_PORT:8081}
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:suzuki_bike_db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+    hikari:
+      maximum-pool-size: 5
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: false
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  mail:
+    host: ${MAIL_HOST:smtp.mailtrap.io}
+    port: ${MAIL_PORT:2525}
+    username: ${MAIL_USER:}
+    password: ${MAIL_PASS:}
+
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY:sk_test_xxx}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_xxx}
+  currency: usd
+
+twilio:
+  account-sid: ${TWILIO_ACCOUNT_SID:}
+  auth-token: ${TWILIO_AUTH_TOKEN:}
+  verify-service-sid: ${TWILIO_VERIFY_SERVICE_SID:}
+
+app:
+  mail-enabled: ${MAIL_ENABLED:false}
+  admin-email: ${ADMIN_EMAIL:admin@example.com}
