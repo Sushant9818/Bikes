@@ -2,5 +2,8 @@
   "installCommand": "cd frontend/app && npm install",
   "buildCommand": "cd frontend/app && npm run build",
   "outputDirectory": "frontend/app/dist",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
 }
