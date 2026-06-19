@@ -75,15 +75,22 @@ public class AuthService {
                 .role(Role.CLIENT)
                 .build();
         user.setPhoneNumber(request.getPhoneNumber());
-        user.setPhoneVerified(false);
-        user.setEnabled(false);
-        user = userRepository.save(user);
 
-        twilioVerifyService.sendOtp(request.getPhoneNumber());
-        otpRateLimiter.recordSend(request.getPhoneNumber());
-
-        String phoneMasked = TwilioVerifyService.maskPhone(request.getPhoneNumber());
-        return new RegisterResponse("OTP sent", phoneMasked);
+        if (twilioVerifyService.isConfigured()) {
+            user.setPhoneVerified(false);
+            user.setEnabled(false);
+            user = userRepository.save(user);
+            twilioVerifyService.sendOtp(request.getPhoneNumber());
+            otpRateLimiter.recordSend(request.getPhoneNumber());
+            String phoneMasked = TwilioVerifyService.maskPhone(request.getPhoneNumber());
+            return new RegisterResponse("OTP sent", phoneMasked);
+        } else {
+            // Twilio not configured — auto-verify and enable the account
+            user.setPhoneVerified(true);
+            user.setEnabled(true);
+            userRepository.save(user);
+            return new RegisterResponse("Registration successful. You can now login.", TwilioVerifyService.maskPhone(request.getPhoneNumber()));
+        }
     }
 
     @Transactional

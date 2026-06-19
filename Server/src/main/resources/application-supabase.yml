@@ -1,0 +1,36 @@
+server:
+  port: 8081
+
+spring:
+  datasource:
+    url: jdbc:postgresql://db.hwypvnfpkozmwnaecrhz.supabase.co:5432/postgres?sslmode=require
+    username: postgres
+    password: Suzuki-Bike11
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 3
+      minimum-idle: 1
+      connection-timeout: 30000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
+    open-in-view: false
+
+  mail:
+    host: smtp.mailtrap.io
+    port: 2525
+    username:
+    password:
+
+stripe:
+  secret-key: sk_test_xxx
+  webhook-secret: whsec_xxx
+  currency: npr
+
+app:
+  mail-enabled: false
+  admin-email: admin@example.com
+  frontend-url: http://localhost:5173

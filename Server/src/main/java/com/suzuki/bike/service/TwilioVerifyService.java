@@ -47,6 +47,10 @@ public class TwilioVerifyService {
         }
     }
 
+    public boolean isConfigured() {
+        return configured;
+    }
+
     private boolean hasText(String s) {
         return s != null && !s.isBlank();
     }
