@@ -50,9 +50,13 @@ export default function RegisterPage() {
         phoneNumber: data.phoneNumber,
       }
       const response = await registerApi(payload)
-      const message = response?.message || 'OTP sent to your phone'
+      const message = response?.message || 'Registration successful'
       toast.success(message)
-      navigate('/verify-otp', { state: { phoneNumber: data.phoneNumber } })
+      if (response?.message?.toLowerCase().includes('otp')) {
+        navigate('/verify-otp', { state: { phoneNumber: data.phoneNumber } })
+      } else {
+        navigate('/login')
+      }
     } catch (err) {
       const message =
         err.response?.data?.message ||
