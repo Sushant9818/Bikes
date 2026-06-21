@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["jdk17", "maven"]
+
+[phases.build]
+cmds = ["mvn package -DskipTests"]
+
+[start]
+cmd = "java -jar target/suzuki-bike-management-1.0.0.jar"
