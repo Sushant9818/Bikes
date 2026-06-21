@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: suzuki-bike-api
+    runtime: java
+    rootDir: Server
+    buildCommand: mvn package -DskipTests
+    startCommand: java -jar target/suzuki-bike-management-1.0.0.jar
+    plan: free
+    envVars:
+      - key: DB_URL
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        value: https://bikes-d6yg.vercel.app
