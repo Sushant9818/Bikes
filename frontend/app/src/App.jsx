@@ -28,6 +28,10 @@ import AnalyticsPage from './pages/AnalyticsPage'
 import OffersPage from './pages/OffersPage'
 import TestDrivePage from './pages/TestDrivePage'
 import ContactPage from './pages/ContactPage'
+import BookServicePage from './pages/BookServicePage'
+import MyAppointmentsPage from './pages/MyAppointmentsPage'
+import AppointmentDetailPage from './pages/AppointmentDetailPage'
+import AdminAppointmentsPage from './pages/AdminAppointmentsPage'
 
 function ProtectedRoute({ children }) {
   return children
@@ -119,6 +123,38 @@ export default function App() {
             <Route path="offers" element={<OffersPage />} />
             <Route path="test-drive" element={<TestDrivePage />} />
             <Route path="contact" element={<ContactPage />} />
+            <Route
+              path="book-service"
+              element={
+                <RequireAuth>
+                  <BookServicePage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="my-appointments"
+              element={
+                <RequireAuth>
+                  <MyAppointmentsPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="appointments/:id"
+              element={
+                <RequireAuth>
+                  <AppointmentDetailPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="admin/appointments"
+              element={
+                <RequireAdmin>
+                  <AdminAppointmentsPage />
+                </RequireAdmin>
+              }
+            />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

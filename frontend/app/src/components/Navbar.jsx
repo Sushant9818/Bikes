@@ -18,6 +18,7 @@ const navItems = [
   { to: '/scooters', label: 'Scooters' },
   { to: '/parts', label: 'Parts' },
   { to: '/offers', label: 'Offers' },
+  { to: '/book-service', label: 'Book Service' },
   { to: '/test-drive', label: 'Test Drive' },
   { to: '/contact', label: 'Contact' },
 ]
@@ -112,6 +113,9 @@ export default function Navbar() {
                   <DropdownMenuItem asChild>
                     <NavLink to="/my-orders">My Orders</NavLink>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <NavLink to="/my-appointments">My Appointments</NavLink>
+                  </DropdownMenuItem>
                   {role === 'ADMIN' && (
                     <>
                       <DropdownMenuItem asChild>
@@ -131,6 +135,9 @@ export default function Navbar() {
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <NavLink to="/admin/analytics">Analytics</NavLink>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <NavLink to="/admin/appointments">Appointments</NavLink>
                       </DropdownMenuItem>
                     </>
                   )}
@@ -210,6 +217,9 @@ export default function Navbar() {
                     <NavLink to="/my-orders" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-xl font-medium text-zinc-700 hover:bg-zinc-100">
                       My Orders
                     </NavLink>
+                    <NavLink to="/my-appointments" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-xl font-medium text-zinc-700 hover:bg-zinc-100">
+                      My Appointments
+                    </NavLink>
                     {role === 'ADMIN' && (
                       <>
                         <NavLink to="/bikes" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-xl font-medium text-zinc-700 hover:bg-zinc-100">
@@ -229,6 +239,9 @@ export default function Navbar() {
                         </NavLink>
                         <NavLink to="/admin/analytics" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-xl font-medium text-zinc-700 hover:bg-zinc-100">
                           Analytics
+                        </NavLink>
+                        <NavLink to="/admin/appointments" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-xl font-medium text-zinc-700 hover:bg-zinc-100">
+                          Appointments
                         </NavLink>
                       </>
                     )}
