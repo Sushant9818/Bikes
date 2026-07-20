@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8081/api/auth/login -X POST -H \"Content-Type: application/json\" -d '{}')",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)",
+      "Bash(curl -sL https://suzukimotorcycle.com.np/wp-content/uploads/2026/04/burgman_Metallic_Matte_Black_5e31868c7ea5e_5e4a6748246f9_5ee6ff4663743.jpg -o '/Users/sushanprajapati/Desktop/Suzuki Bike/frontend/app/public/assets/images/scooters/burgman-black.jpg')",
+      "Bash(curl -sL https://suzukimotorcycle.com.np/wp-content/uploads/2026/04/Pearl-Mirage-White-min_5f4f937d22829.png -o '/Users/sushanprajapati/Desktop/Suzuki Bike/frontend/app/public/assets/images/scooters/burgman-white.png')",
+      "Bash(curl -sL https://suzukimotorcycle.com.np/wp-content/uploads/2026/04/Fibroin-gray-min_5f4f936bbfbec.png -o '/Users/sushanprajapati/Desktop/Suzuki Bike/frontend/app/public/assets/images/scooters/burgman-gray.png')",
+      "Bash(curl -sL https://suzukimotorcycle.com.np/wp-content/uploads/2026/04/2-1.jpg -o '/Users/sushanprajapati/Desktop/Suzuki Bike/frontend/app/public/assets/images/scooters/avenis-blue.jpg')",
+      "Bash(curl -sL https://suzukimotorcycle.com.np/wp-content/uploads/2026/04/3-1.jpg -o '/Users/sushanprajapati/Desktop/Suzuki Bike/frontend/app/public/assets/images/scooters/avenis-gray.jpg')",
+      "Bash(curl -s http://localhost:8081/api/vehicles)",
+      "Bash(curl -s http://localhost:8081/api/vehicles/9)",
+      "Bash(pkill -f \"spring-boot:run\")",
+      "Bash(mvn spring-boot:run)",
+      "Bash(echo \"Started PID: $!\")",
+      "Bash(curl -s -X POST http://localhost:8081/api/auth/register -H 'Content-Type: application/json' -d '{\"username\":\"test\",\"email\":\"test@test.com\",\"password\":\"test1234\"}')",
+      "Bash(curl -s -X POST http://localhost:8081/api/auth/register -H 'Content-Type: application/json' -d '{\"username\":\"testuser\",\"email\":\"test@test.com\",\"password\":\"test1234\",\"phoneNumber\":\"9800000001\"}')",
+      "Bash(curl -s -X POST http://localhost:8081/api/auth/register -H 'Content-Type: application/json' -d '{\"username\":\"newuser\",\"email\":\"newuser@test.com\",\"password\":\"test1234\",\"phoneNumber\":\"9800000099\"}')",
+      "Bash(curl -s -X POST http://localhost:8081/api/auth/login -H 'Content-Type: application/json' -d '{\"username\":\"newuser\",\"password\":\"test1234\"}')",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s \"http://localhost:8081/api/vehicles\" -o /dev/null -w \"%{http_code}\")",
+      "Bash(PGPASSWORD=\"Suzuki-Bike11\" psql \"postgresql://postgres@db.hwypvnfpkozmwnaecrhz.supabase.co:5432/postgres?sslmode=require\" -c \"\\\\dt public.*\")",
+      "Bash(brew install *)",
+      "Bash(/opt/homebrew/opt/postgresql@18/bin/psql \"postgresql://postgres:Suzuki-Bike11@db.hwypvnfpkozmwnaecrhz.supabase.co:5432/postgres?sslmode=require\" -c \"\\\\dt public.*\")",
+      "Bash(/opt/homebrew/opt/postgresql@18/bin/psql \"postgresql://postgres:Suzuki-Bike11@db.hwypvnfpkozmwnaecrhz.supabase.co:5432/postgres?sslmode=require\")",
+      "Bash(python3 -c \"import sys,json; data=json.load\\(sys.stdin\\); print\\(f'OK — {len\\(data\\)} vehicles returned'\\)\")",
+      "Bash(curl -s http://localhost:8081/api/parts)",
+      "Bash(curl -s http://localhost:8081/api/offers)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
+    ]
+  }
+}

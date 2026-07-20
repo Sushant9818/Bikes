@@ -146,32 +146,32 @@ public class DataSeeder implements CommandLineRunner {
         final int year = 2024;
         final String brand = "Suzuki";
 
-        // Scooters (serial 1–3 on fresh database)
+        // Scooters
         seedVehicle(brand, VehicleType.SCOOTER, "Access 125FI", year, 94_500.0, 12,
-                "/assets/images/scooters/scooter-1.jpg",
+                "/assets/images/scooters/access-125-fi.jpg",
                 "Fuel-injected 125cc Suzuki scooter with comfortable city riding and excellent mileage.");
         seedVehicle(brand, VehicleType.SCOOTER, "Burgman Street 125FI", year, 114_000.0, 10,
-                "/assets/images/scooters/scooter-2.jpg",
+                "/assets/images/scooters/burgman-125-fi.jpg",
                 "Premium maxi-scooter styling with 125FI performance and ample under-seat storage.");
         seedVehicle(brand, VehicleType.SCOOTER, "Avenis 125FI", year, 98_500.0, 8,
-                "/assets/images/scooters/scooter-3.jpg",
+                "/assets/images/scooters/avenis-125-fi.jpg",
                 "Sporty urban scooter with FI engine, LED lighting, and agile handling.");
 
-        // Motorcycles (serial 4–8 on fresh database)
+        // Motorcycles
         seedVehicle(brand, VehicleType.BIKE, "Gixxer 155 Fi", year, 229_000.0, 15,
-                "/assets/images/bikes/bike-1.jpg",
+                "/assets/images/bikes/gixxer-155-blue.jpg",
                 "Naked street bike with 155cc fuel-injected engine for daily commuting and weekend rides.");
         seedVehicle(brand, VehicleType.BIKE, "Gixxer SF 155", year, 249_000.0, 12,
-                "/assets/images/bikes/bike-2.jpg",
+                "/assets/images/bikes/gixxer-sf-150-abs.png",
                 "Fully-faired 155 sport commuter with aggressive design and responsive handling.");
         seedVehicle(brand, VehicleType.BIKE, "Gixxer 250", year, 319_000.0, 10,
-                "/assets/images/bikes/bike-3.jpg",
+                "/assets/images/bikes/gixxer-250-naked.png",
                 "250cc naked sport motorcycle with strong mid-range power and modern features.");
         seedVehicle(brand, VehicleType.BIKE, "Gixxer SF 250", year, 359_000.0, 10,
-                "/assets/images/bikes/bike-4.jpg",
+                "/assets/images/bikes/gixxer-sf-250-std.png",
                 "Sport faired Gixxer 250 with track-inspired styling and balanced street performance.");
         seedVehicle(brand, VehicleType.BIKE, "V-Strom SX 250", year, 289_000.0, 8,
-                "/assets/images/bikes/bike-5.jpg",
+                "/assets/images/bikes/vstrom-sx-250.jpg",
                 "Adventure-styled 250 tourer built for city streets and light touring comfort.");
     }
 

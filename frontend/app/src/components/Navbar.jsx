@@ -18,9 +18,9 @@ const navItems = [
   { to: '/scooters', label: 'Scooters' },
   { to: '/parts', label: 'Parts' },
   { to: '/offers', label: 'Offers' },
-  { to: '/book-service', label: 'Book Service' },
   { to: '/test-drive', label: 'Test Drive' },
   { to: '/contact', label: 'Contact' },
+  { to: '/book-service', label: 'Book Service', highlight: true },
 ]
 
 const LOGO_PATH = '/assets/images/suzuki-logo.png'
@@ -60,15 +60,19 @@ export default function Navbar() {
             </div>
           </NavLink>
 
-          <div className="hidden lg:flex items-center gap-2 flex-1 max-w-xl mx-6">
-            {navItems.map(({ to, label }) => (
+          <div className="hidden lg:flex items-center gap-2 flex-1 max-w-2xl mx-6">
+            {navItems.map(({ to, label, highlight }) => (
               <NavLink
                 key={to}
                 to={to}
                 className={({ isActive }) =>
-                  `px-3 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${
-                    isActive ? 'bg-[#E60012] text-white' : 'text-zinc-700 hover:bg-zinc-100'
-                  }`
+                  highlight
+                    ? `px-3 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${
+                        isActive ? 'bg-[#C5000F] text-white' : 'bg-[#E60012] text-white hover:bg-[#C5000F]'
+                      }`
+                    : `px-3 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${
+                        isActive ? 'bg-[#E60012] text-white' : 'text-zinc-700 hover:bg-zinc-100'
+                      }`
                 }
               >
                 {label}
@@ -191,15 +195,15 @@ export default function Navbar() {
               </div>
             </form>
             <div className="flex flex-col gap-1">
-              {navItems.map(({ to, label }) => (
+              {navItems.map(({ to, label, highlight }) => (
                 <NavLink
                   key={to}
                   to={to}
                   onClick={() => setMobileMenuOpen(false)}
                   className={({ isActive }) =>
-                    `px-4 py-3 rounded-xl font-medium ${
-                      isActive ? 'bg-[#E60012] text-white' : 'text-zinc-700 hover:bg-zinc-100'
-                    }`
+                    highlight
+                      ? `px-4 py-3 rounded-xl font-medium ${isActive ? 'bg-[#C5000F] text-white' : 'bg-[#E60012] text-white'}`
+                      : `px-4 py-3 rounded-xl font-medium ${isActive ? 'bg-[#E60012] text-white' : 'text-zinc-700 hover:bg-zinc-100'}`
                   }
                 >
                   {label}
