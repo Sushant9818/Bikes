@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { getMyAppointments, cancelAppointment, STATUS_CONFIG, getServiceLabel } from '@/api/appointments'
+import {
+  getMyAppointments, cancelAppointment, rescheduleAppointment,
+  STATUS_CONFIG, getServiceLabel, TIME_SLOTS,
+} from '@/api/appointments'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import Footer from '@/components/Footer'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog'
 import { toast } from 'sonner'
-import { Plus, Wrench, CalendarDays, Clock, Eye, XCircle } from 'lucide-react'
+import { Plus, Wrench, CalendarDays, Clock, Eye, XCircle, RefreshCw, X } from 'lucide-react'
 
 function StatusBadge({ status }) {
   const cfg = STATUS_CONFIG[status] ?? { label: status, color: 'bg-zinc-100 text-zinc-600' }
@@ -17,14 +22,117 @@ function StatusBadge({ status }) {
   )
 }
 
+function RescheduleModal({ appt, onClose, onSuccess }) {
+  const today = new Date().toISOString().split('T')[0]
+  const [date, setDate] = useState(appt.preferredDate || '')
+  const [time, setTime] = useState(appt.preferredTime || '')
+  const [saving, setSaving] = useState(false)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!date || !time) { toast.error('Please select date and time'); return }
+    setSaving(true)
+    try {
+      await rescheduleAppointment(appt.id, {
+        bikeModel: appt.bikeModel,
+        preferredDate: date,
+        preferredTime: time,
+      })
+      toast.success('Appointment rescheduled!')
+      onSuccess()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to reschedule')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between p-5 border-b border-zinc-200">
+          <div>
+            <h2 className="font-bold text-zinc-900 text-lg">Reschedule Appointment</h2>
+            <p className="text-zinc-500 text-sm mt-0.5">{appt.bikeModel} &middot; #{appt.id}</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-xl text-zinc-400 hover:bg-zinc-100">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div className="bg-zinc-50 rounded-xl p-3 text-sm text-zinc-600">
+            <p className="text-zinc-500 text-xs mb-1">Current schedule</p>
+            <span className="flex items-center gap-1.5">
+              <CalendarDays className="w-3.5 h-3.5 text-zinc-400" />
+              {appt.preferredDate}
+              <Clock className="w-3.5 h-3.5 text-zinc-400 ml-2" />
+              {appt.preferredTime}
+            </span>
+          </div>
+
+          <div>
+            <Label htmlFor="rs-date">New Date</Label>
+            <Input
+              id="rs-date"
+              type="date"
+              min={today}
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="mt-1 rounded-xl"
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="rs-time">New Time Slot</Label>
+            <select
+              id="rs-time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              className="w-full mt-1 h-10 px-3 border border-zinc-200 rounded-xl text-sm bg-white"
+              required
+            >
+              <option value="">Select a time slot</option>
+              {TIME_SLOTS.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex gap-3 pt-1">
+            <Button
+              type="submit"
+              disabled={saving}
+              className="flex-1 bg-[#E60012] hover:bg-[#C5000F] rounded-xl"
+            >
+              {saving ? 'Saving...' : 'Confirm Reschedule'}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-xl"
+              onClick={onClose}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 export default function MyAppointmentsPage() {
   const navigate = useNavigate()
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
   const [cancelTarget, setCancelTarget] = useState(null)
   const [cancelling, setCancelling] = useState(false)
+  const [rescheduleTarget, setRescheduleTarget] = useState(null)
 
-  const fetch = async () => {
+  const fetchAppointments = async () => {
     setLoading(true)
     try {
       const data = await getMyAppointments()
@@ -36,7 +144,7 @@ export default function MyAppointmentsPage() {
     }
   }
 
-  useEffect(() => { fetch() }, [])
+  useEffect(() => { fetchAppointments() }, [])
 
   const handleCancel = async () => {
     if (!cancelTarget) return
@@ -45,7 +153,7 @@ export default function MyAppointmentsPage() {
       await cancelAppointment(cancelTarget.id)
       toast.success('Appointment cancelled')
       setCancelTarget(null)
-      fetch()
+      fetchAppointments()
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to cancel')
     } finally {
@@ -55,6 +163,14 @@ export default function MyAppointmentsPage() {
 
   return (
     <>
+      {rescheduleTarget && (
+        <RescheduleModal
+          appt={rescheduleTarget}
+          onClose={() => setRescheduleTarget(null)}
+          onSuccess={() => { setRescheduleTarget(null); fetchAppointments() }}
+        />
+      )}
+
       <div className="py-10 px-4 sm:px-6 lg:px-8 min-h-[70vh]">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-8">
@@ -124,21 +240,31 @@ export default function MyAppointmentsPage() {
                       )}
                     </div>
 
-                    <div className="flex gap-2 shrink-0">
+                    <div className="flex flex-wrap gap-2 shrink-0">
                       <Link to={`/appointments/${appt.id}`}>
                         <Button size="sm" variant="outline" className="rounded-xl">
                           <Eye className="w-4 h-4 mr-1" /> View
                         </Button>
                       </Link>
                       {appt.status === 'PENDING' && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="rounded-xl text-red-600 border-red-200 hover:bg-red-50"
-                          onClick={() => setCancelTarget(appt)}
-                        >
-                          <XCircle className="w-4 h-4 mr-1" /> Cancel
-                        </Button>
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-xl text-blue-600 border-blue-200 hover:bg-blue-50"
+                            onClick={() => setRescheduleTarget(appt)}
+                          >
+                            <RefreshCw className="w-4 h-4 mr-1" /> Reschedule
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-xl text-red-600 border-red-200 hover:bg-red-50"
+                            onClick={() => setCancelTarget(appt)}
+                          >
+                            <XCircle className="w-4 h-4 mr-1" /> Cancel
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>
