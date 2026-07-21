@@ -1,11 +1,8 @@
 services:
   - type: web
     name: suzuki-bike-api
-    runtime: java
-    javaVersion: 21
-    rootDir: Server
-    buildCommand: mvn package -DskipTests
-    startCommand: java -jar target/suzuki-bike-management-1.0.0.jar
+    env: docker
+    dockerfilePath: ./Server/Dockerfile
     plan: free
     envVars:
       - key: DB_URL
