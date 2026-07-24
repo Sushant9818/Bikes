@@ -2988,19 +2988,23 @@ git commit -m "feat: add shared catalog and admin UI components"
 ### Task 9: Vehicle pages (public + admin)
 
 **Files:**
+- Create: `web/components/VehicleCatalogPage.tsx`
 - Create: `web/app/(site)/bikes/page.tsx`
 - Create: `web/app/(site)/scooters/page.tsx`
 - Create: `web/app/(site)/products/[id]/page.tsx`
 - Create: `web/app/(site)/page.tsx` (home page, replaces Task 1's placeholder)
+- Test: `web/tests/components/VehicleCatalogPage.test.tsx`
 - Test: `web/tests/app/products-detail.test.tsx`
 
 **Interfaces:**
-- Consumes: `ProductCard`, `AddEditModal`, `ConfirmDeleteDialog`, `VehicleCategoryTabs`, `SkeletonGrid`, `LoadingSpinner`, `Footer`, `HeroSection` (Tasks 6/8), `Input`, `Button`, `Label` (Task 2), `vehicleInputSchema` (Task 7), `formatNPR` (Task 1), `getImageUrl` (Task 1). Fetches `GET/POST/PUT/DELETE /api/vehicles(/:id)` (Task 7) via `fetch`.
-- Produces: `/bikes`, `/scooters`, `/products/:id`, `/` (home) pages.
+- Consumes: `ProductCard`, `AddEditModal`, `ConfirmDeleteDialog`, `SkeletonGrid`, `LoadingSpinner`, `Footer`, `HeroSection` (Tasks 6/8), `Input`, `Button`, `Label` (Task 2), `vehicleInputSchema` (Task 7), `formatNPR` (Task 1), `getImageUrl` (Task 1). Fetches `GET/POST/PUT/DELETE /api/vehicles(/:id)` (Task 7) via `fetch`.
+- Produces: `<VehicleCatalogPage type="BIKE" | "SCOOTER" heading={string} addLabel={string} />`. Pages: `/bikes`, `/scooters`, `/products/:id`, `/` (home).
 
-- [ ] **Step 1: Write `web/app/(site)/bikes/page.tsx`**
+**Design note:** `/bikes` and `/scooters` are thin route wrappers around one shared `VehicleCatalogPage` component parameterized by `type`/`heading`/`addLabel` — same pattern the original app used (`BikesPage`/`ScootersPage` as one-line wrappers around a shared `ProductsPage`), and the same pattern Task 11 uses for parts. Do not duplicate the catalog logic into two page files.
 
-This Client Component fetches vehicles client-side (matches the existing app's admin-CRUD-in-place-on-the-catalog-page pattern) and supports both the public browsing view and the admin add/edit/delete flow on the same page.
+- [ ] **Step 1: Write `web/components/VehicleCatalogPage.tsx`**
+
+This Client Component fetches vehicles client-side (matches the existing app's admin-CRUD-in-place-on-the-catalog-page pattern) and supports both the public browsing view and the admin add/edit/delete flow on the same page. It is parameterized by `type` so `/bikes` and `/scooters` can both render it.
 
 ```typescript
 'use client'
@@ -3018,9 +3022,6 @@ import { Label } from '@/components/ui/label'
 import { Plus, Search } from 'lucide-react'
 import type { Vehicle } from '@prisma/client'
 
-const TYPE = 'BIKE' as const
-const HEADING = 'Suzuki Motorcycles'
-
 interface VehicleFormState {
   type: 'BIKE' | 'SCOOTER'
   modelName: string
@@ -3031,11 +3032,17 @@ interface VehicleFormState {
   description: string
 }
 
-const emptyForm: VehicleFormState = { type: TYPE, modelName: '', year: new Date().getFullYear(), price: 0, quantity: 0, imageUrl: '', description: '' }
+interface VehicleCatalogPageProps {
+  type: 'BIKE' | 'SCOOTER'
+  heading: string
+  addLabel: string
+}
 
-export default function BikesPage() {
+export default function VehicleCatalogPage({ type, heading, addLabel }: VehicleCatalogPageProps) {
   const { user } = useUser()
   const isAdmin = (user?.publicMetadata?.role as string | undefined) === 'ADMIN'
+
+  const emptyForm: VehicleFormState = { type, modelName: '', year: new Date().getFullYear(), price: 0, quantity: 0, imageUrl: '', description: '' }
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [loading, setLoading] = useState(true)
@@ -3049,14 +3056,14 @@ export default function BikesPage() {
 
   const fetchData = async () => {
     setLoading(true)
-    const params = new URLSearchParams({ type: TYPE })
+    const params = new URLSearchParams({ type })
     if (searchQuery.trim()) params.set('q', searchQuery.trim())
     const res = await fetch(`/api/vehicles?${params}`)
     setVehicles(res.ok ? await res.json() : [])
     setLoading(false)
   }
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => { fetchData() }, [type])
 
   const displayList = useMemo(() => [...vehicles].sort((a, b) => a.id - b.id), [vehicles])
 
@@ -3092,12 +3099,12 @@ export default function BikesPage() {
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-zinc-900">{HEADING}</h1>
+              <h1 className="text-3xl font-bold text-zinc-900">{heading}</h1>
               <p className="text-zinc-600 text-sm mt-1">{displayList.length} vehicle(s)</p>
             </div>
             {isAdmin && (
               <Button onClick={openAdd} className="bg-[#E60012] hover:bg-[#C5000F] rounded-xl">
-                <Plus className="w-4 h-4 mr-2" /> Add Bike
+                <Plus className="w-4 h-4 mr-2" /> {addLabel}
               </Button>
             )}
           </div>
@@ -3135,7 +3142,7 @@ export default function BikesPage() {
         </div>
       </div>
 
-      <AddEditModal open={modalOpen} onOpenChange={setModalOpen} title={editing ? 'Edit Vehicle' : 'Add Bike'} onSubmit={onSubmit} loading={saving} submitLabel={editing ? 'Update' : 'Add'}>
+      <AddEditModal open={modalOpen} onOpenChange={setModalOpen} title={editing ? 'Edit Vehicle' : addLabel} onSubmit={onSubmit} loading={saving} submitLabel={editing ? 'Update' : 'Add'}>
         <div><Label>Model Name *</Label><Input value={form.modelName} onChange={(e) => setForm({ ...form, modelName: e.target.value })} className="mt-1" required /></div>
         <div><Label>Year</Label><Input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: Number(e.target.value) })} className="mt-1" /></div>
         <div><Label>Price (Rs)</Label><Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} className="mt-1" /></div>
@@ -3152,11 +3159,60 @@ export default function BikesPage() {
 }
 ```
 
-- [ ] **Step 2: Write `web/app/(site)/scooters/page.tsx`**
+- [ ] **Step 2: Write the failing test**
 
-Same as `bikes/page.tsx` but with `const TYPE = 'SCOOTER' as const` and `const HEADING = 'Suzuki Scooters'`, `defaultValues.type = 'SCOOTER'`, and the Add button label `Add Scooter`. Copy the full file from Step 1 and apply exactly these four substitutions — do not abbreviate or reference the other file.
+`web/tests/components/VehicleCatalogPage.test.tsx`:
 
-- [ ] **Step 3: Write `web/app/(site)/products/[id]/page.tsx`**
+```typescript
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
+import VehicleCatalogPage from '@/components/VehicleCatalogPage'
+
+vi.mock('@clerk/nextjs', () => ({ useUser: () => ({ user: null }) }))
+
+describe('VehicleCatalogPage', () => {
+  beforeEach(() => {
+    global.fetch = vi.fn(async (url: string) => ({
+      ok: true,
+      json: async () => (url.includes('type=SCOOTER') ? [{ id: 2, type: 'SCOOTER', modelName: 'Access 125', quantity: 5 }] : [{ id: 1, type: 'BIKE', modelName: 'Gixxer 155', quantity: 5 }]),
+    })) as unknown as typeof fetch
+  })
+
+  it('requests vehicles filtered by the given type and renders the heading', async () => {
+    render(<VehicleCatalogPage type="SCOOTER" heading="Suzuki Scooters" addLabel="Add Scooter" />)
+    await waitFor(() => expect(screen.getByText('Access 125')).toBeInTheDocument())
+    expect(screen.getByText('Suzuki Scooters')).toBeInTheDocument()
+    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('type=SCOOTER'))
+  })
+})
+```
+
+- [ ] **Step 3: Run test, verify pass**
+
+Run: `cd web && npm test -- tests/components/VehicleCatalogPage.test.tsx`
+Expected: 1 passed
+
+- [ ] **Step 4: Write `web/app/(site)/bikes/page.tsx`**
+
+```typescript
+import VehicleCatalogPage from '@/components/VehicleCatalogPage'
+
+export default function BikesPage() {
+  return <VehicleCatalogPage type="BIKE" heading="Suzuki Motorcycles" addLabel="Add Bike" />
+}
+```
+
+- [ ] **Step 5: Write `web/app/(site)/scooters/page.tsx`**
+
+```typescript
+import VehicleCatalogPage from '@/components/VehicleCatalogPage'
+
+export default function ScootersPage() {
+  return <VehicleCatalogPage type="SCOOTER" heading="Suzuki Scooters" addLabel="Add Scooter" />
+}
+```
+
+- [ ] **Step 6: Write `web/app/(site)/products/[id]/page.tsx`**
 
 ```typescript
 'use client'
@@ -3223,7 +3279,7 @@ export default function ProductDetailPage() {
 }
 ```
 
-- [ ] **Step 4: Write `web/app/(site)/page.tsx`** (home page)
+- [ ] **Step 7: Write `web/app/(site)/page.tsx`** (home page)
 
 ```typescript
 'use client'
@@ -3274,7 +3330,7 @@ export default function HomePage() {
 }
 ```
 
-- [ ] **Step 5: Write the failing test**
+- [ ] **Step 8: Write the failing test**
 
 `web/tests/app/products-detail.test.tsx`:
 
@@ -3310,12 +3366,12 @@ describe('ProductDetailPage', () => {
 })
 ```
 
-- [ ] **Step 6: Run test, verify pass**
+- [ ] **Step 9: Run test, verify pass**
 
 Run: `cd web && npm test -- tests/app/products-detail.test.tsx`
 Expected: 2 passed
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
 git add -A
