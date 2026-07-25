@@ -12,15 +12,14 @@ if (!globalForPrisma.prisma) {
     const pool = new Pool({
       connectionString: process.env.DATABASE_URL,
     })
-    const adapter = new PrismaPg({ pool })
+    const adapter = new PrismaPg(pool)
     prismaClient = new PrismaClient({ adapter })
   } else {
     // For testing without a database, create a client without connection
     // This will fail on actual queries but allows testing the client structure
+    const testPool = new Pool({ connectionString: 'postgresql://localhost/test' })
     prismaClient = new PrismaClient({
-      adapter: new PrismaPg({
-        pool: new Pool({ connectionString: 'postgresql://localhost/test' }),
-      }),
+      adapter: new PrismaPg(testPool),
     })
   }
 
