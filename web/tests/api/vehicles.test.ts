@@ -10,6 +10,7 @@ const requireAdminMock = vi.fn()
 vi.mock('@/lib/auth', () => ({ requireAdmin: () => requireAdminMock() }))
 
 import { prisma } from '@/lib/prisma'
+import { ApiError } from '@/lib/api-error'
 import { GET, POST } from '@/app/api/vehicles/route'
 import { GET as GET_ONE, PUT, DELETE } from '@/app/api/vehicles/[id]/route'
 
@@ -31,7 +32,7 @@ describe('POST /api/vehicles', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('rejects non-admin callers', async () => {
-    requireAdminMock.mockRejectedValue({ status: 403, message: 'Admin access required' })
+    requireAdminMock.mockRejectedValue(new ApiError(403, 'Admin access required'))
     const req = new Request('http://localhost/api/vehicles', {
       method: 'POST',
       body: JSON.stringify({ type: 'BIKE', modelName: 'Gixxer', year: 2024, price: 100, quantity: 1 }),
