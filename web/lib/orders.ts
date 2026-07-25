@@ -39,24 +39,44 @@ export async function createOrderDraft(
   })
 }
 
+class InsufficientStockError extends Error {
+  partName: string
+  constructor(partName: string) {
+    super(`Insufficient stock for part: ${partName}`)
+    this.partName = partName
+  }
+}
+
 export async function finalizeOrder(orderId: number): Promise<void> {
   const order = await prisma.order.findUnique({ where: { id: orderId }, include: { items: true } })
   if (!order) throw new ApiError(404, 'Order not found')
   if (order.status === 'PAID') return
 
-  await prisma.$transaction(async (tx) => {
-    for (const item of order.items) {
-      const part = await tx.part.findUnique({ where: { id: item.partId } })
-      if (!part) throw new ApiError(404, `Part not found: ${item.partId}`)
-      const newQuantity = part.quantity - item.quantity
-      if (newQuantity < 0) {
-        await tx.order.update({ where: { id: orderId }, data: { status: 'PAYMENT_REVIEW' } })
-        throw new ApiError(409, `Insufficient stock for part: ${part.partName} after payment`)
+  try {
+    await prisma.$transaction(async (tx) => {
+      const current = await tx.order.findUnique({ where: { id: orderId } })
+      if (!current || current.status === 'PAID') return
+
+      for (const item of order.items) {
+        const result = await tx.part.updateMany({
+          where: { id: item.partId, quantity: { gte: item.quantity } },
+          data: { quantity: { decrement: item.quantity } },
+        })
+        if (result.count === 0) {
+          const part = await tx.part.findUnique({ where: { id: item.partId } })
+          throw new InsufficientStockError(part?.partName ?? `part ${item.partId}`)
+        }
       }
-      await tx.part.update({ where: { id: part.id }, data: { quantity: newQuantity } })
+
+      await tx.order.update({ where: { id: orderId }, data: { status: 'PAID' } })
+    })
+  } catch (err) {
+    if (err instanceof InsufficientStockError) {
+      await prisma.order.update({ where: { id: orderId }, data: { status: 'PAYMENT_REVIEW' } })
+      throw new ApiError(409, `Insufficient stock for part: ${err.partName} after payment`)
     }
-    await tx.order.update({ where: { id: orderId }, data: { status: 'PAID' } })
-  })
+    throw err
+  }
 }
 
 export async function setStripePaymentIntentId(orderId: number, paymentIntentId: string): Promise<void> {

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const txMock = {
-  part: { findUnique: vi.fn(), update: vi.fn() },
-  order: { create: vi.fn(), update: vi.fn() },
+  part: { updateMany: vi.fn(), findUnique: vi.fn() },
+  order: { create: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
 }
 
 vi.mock('@/lib/prisma', () => ({
@@ -69,11 +69,15 @@ describe('finalizeOrder', () => {
     ;(prisma.order.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
       id: 1, status: 'PENDING', items: [{ partId: 10, quantity: 2 }],
     })
-    txMock.part.findUnique.mockResolvedValue({ id: 10, partName: 'Air Filter', quantity: 5 })
+    txMock.order.findUnique.mockResolvedValue({ status: 'PENDING' })
+    txMock.part.updateMany.mockResolvedValue({ count: 1 })
 
     await finalizeOrder(1)
 
-    expect(txMock.part.update).toHaveBeenCalledWith({ where: { id: 10 }, data: { quantity: 3 } })
+    expect(txMock.part.updateMany).toHaveBeenCalledWith({
+      where: { id: 10, quantity: { gte: 2 } },
+      data: { quantity: { decrement: 2 } },
+    })
     expect(txMock.order.update).toHaveBeenCalledWith({ where: { id: 1 }, data: { status: 'PAID' } })
   })
 
@@ -81,9 +85,14 @@ describe('finalizeOrder', () => {
     ;(prisma.order.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
       id: 1, status: 'PENDING', items: [{ partId: 10, quantity: 5 }],
     })
+    txMock.order.findUnique.mockResolvedValue({ status: 'PENDING' })
+    txMock.part.updateMany.mockResolvedValue({ count: 0 })
     txMock.part.findUnique.mockResolvedValue({ id: 10, partName: 'Air Filter', quantity: 2 })
 
     await expect(finalizeOrder(1)).rejects.toMatchObject({ status: 409 })
-    expect(txMock.order.update).toHaveBeenCalledWith({ where: { id: 1 }, data: { status: 'PAYMENT_REVIEW' } })
+    expect((prisma.order.update as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { status: 'PAYMENT_REVIEW' },
+    })
   })
 })
