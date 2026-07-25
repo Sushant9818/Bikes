@@ -20,6 +20,12 @@ export function handleApiError(err: unknown): NextResponse {
       { status: 400 }
     )
   }
+  if (err && typeof err === 'object' && 'status' in err && 'message' in err) {
+    const { status, message } = err as { status: unknown; message: unknown }
+    if (typeof status === 'number' && typeof message === 'string') {
+      return NextResponse.json({ message }, { status })
+    }
+  }
   console.error('Unhandled API error:', err)
   return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
 }
