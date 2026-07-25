@@ -127,7 +127,7 @@ model Order {
   address               String
   totalAmount           Float       @map("total_amount")
   status                OrderStatus @default(PENDING)
-  stripePaymentIntentId String?     @map("stripe_payment_intent_id")
+  stripePaymentIntentId String?     @unique @map("stripe_payment_intent_id")
   userId                Int?        @map("user_id")
   user                  User?       @relation(fields: [userId], references: [id])
   createdAt             DateTime    @default(now()) @map("created_at")
