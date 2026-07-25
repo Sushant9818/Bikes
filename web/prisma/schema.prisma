@@ -1,0 +1,211 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  CLIENT
+}
+
+enum VehicleType {
+  BIKE
+  SCOOTER
+}
+
+enum PartType {
+  BIKE_PART
+  SCOOTER_PART
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CONFIRMED
+  SHIPPED
+  CANCELLED
+  PAYMENT_REVIEW
+  FAILED
+}
+
+enum AppointmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ServiceType {
+  OIL_CHANGE
+  ENGINE_REPAIR
+  TIRE_REPLACEMENT
+  BRAKE_SERVICE
+  BATTERY_REPLACEMENT
+  CHAIN_ADJUSTMENT
+  CHAIN_REPLACEMENT
+  SUSPENSION_REPAIR
+  ELECTRICAL_REPAIR
+  GENERAL_INSPECTION
+  FULL_SERVICE
+  CLUTCH_REPAIR
+  GEAR_REPAIR
+  COOLING_SYSTEM_REPAIR
+  FUEL_SYSTEM_CLEANING
+  AIR_FILTER_REPLACEMENT
+  SPARK_PLUG_REPLACEMENT
+  WHEEL_ALIGNMENT
+  WASHING_DETAILING
+  OTHER
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  clerkUserId String   @unique @map("clerk_user_id")
+  username    String   @unique
+  email       String   @unique
+  phoneNumber String?  @map("phone_number")
+  role        Role     @default(CLIENT)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  orders      Order[]
+
+  @@map("users")
+}
+
+model Vehicle {
+  id          Int         @id @default(autoincrement())
+  type        VehicleType
+  modelName   String      @map("model_name")
+  brand       String      @default("Suzuki")
+  year        Int
+  price       Float
+  quantity    Int
+  imageUrl    String?     @map("image_url")
+  description String?
+
+  @@map("vehicles")
+}
+
+model Part {
+  id              Int      @id @default(autoincrement())
+  type            PartType
+  brand           String   @default("Suzuki")
+  partName        String   @map("part_name")
+  compatibleModel String?  @map("compatible_model")
+  price           Float
+  quantity        Int
+  imageUrl        String?  @map("image_url")
+
+  orderItems      OrderItem[]
+
+  @@map("parts")
+}
+
+model Offer {
+  id              Int       @id @default(autoincrement())
+  title           String
+  description     String?
+  discountPercent Float?    @map("discount_percent")
+  startDate       DateTime? @map("start_date") @db.Date
+  endDate         DateTime? @map("end_date") @db.Date
+  imageUrl        String?   @map("image_url")
+
+  @@map("offers")
+}
+
+model Order {
+  id                    Int         @id @default(autoincrement())
+  customerName          String      @map("customer_name")
+  phone                 String
+  email                 String?
+  address               String
+  totalAmount           Float       @map("total_amount")
+  status                OrderStatus @default(PENDING)
+  stripePaymentIntentId String?     @map("stripe_payment_intent_id")
+  userId                Int?        @map("user_id")
+  user                  User?       @relation(fields: [userId], references: [id])
+  createdAt             DateTime    @default(now()) @map("created_at")
+
+  items                 OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id       Int    @id @default(autoincrement())
+  partId   Int    @map("part_id")
+  part     Part   @relation(fields: [partId], references: [id])
+  partName String @map("part_name")
+  price    Float
+  quantity Int
+  orderId  Int    @map("order_id")
+  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+model Appointment {
+  id                 Int                  @id @default(autoincrement())
+  clientUsername     String               @map("client_username")
+  bikeModel          String               @map("bike_model")
+  bikeYear           Int?                 @map("bike_year")
+  registrationNumber String?              @map("registration_number")
+  vin                String?
+  mileage            Int?
+  customService      String?              @map("custom_service")
+  description        String?
+  preferredDate      DateTime             @map("preferred_date") @db.Date
+  preferredTime      String               @map("preferred_time")
+  status             AppointmentStatus    @default(PENDING)
+  estimatedCost      Float?               @map("estimated_cost")
+  finalCost          Float?               @map("final_cost")
+  repairNotes        String?              @map("repair_notes")
+  serviceNotes       String?              @map("service_notes")
+  mechanicName       String?              @map("mechanic_name")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+
+  services           AppointmentService[]
+
+  @@map("appointments")
+}
+
+model AppointmentService {
+  id            Int         @id @default(autoincrement())
+  appointmentId Int         @map("appointment_id")
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  service       ServiceType
+
+  @@map("appointment_services")
+}
+
+model TestDriveRequest {
+  id            Int       @id @default(autoincrement())
+  name          String
+  phone         String
+  email         String?
+  vehicleId     Int?      @map("vehicle_id")
+  preferredDate DateTime? @map("preferred_date") @db.Date
+  message       String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@map("test_drive_requests")
+}
+
+model ContactRequest {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("contact_requests")
+}
