@@ -15,3 +15,7 @@ export const createIntentSchema = z.object({
 
 export type CreateIntentInput = z.infer<typeof createIntentSchema>
 export type OrderItemInput = z.infer<typeof orderItemInputSchema>
+
+export const orderStatusEnum = z.enum(['PENDING', 'PAID', 'CONFIRMED', 'SHIPPED', 'CANCELLED', 'PAYMENT_REVIEW', 'FAILED'])
+
+export const orderStatusUpdateSchema = z.object({ status: orderStatusEnum })
