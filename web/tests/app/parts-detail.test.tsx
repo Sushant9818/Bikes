@@ -1,8 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
+import { CartProvider } from '@/cart/CartContext'
 import PartDetailPage from '@/app/(site)/parts/[id]/page'
 
-vi.mock('next/navigation', () => ({ useParams: () => ({ id: '1' }) }))
+vi.mock('next/navigation', () => ({
+  useParams: () => ({ id: '1' }),
+  useRouter: () => ({ push: vi.fn() }),
+}))
+
+vi.mock('@clerk/nextjs', () => ({
+  useUser: () => ({ isSignedIn: true, user: null }),
+}))
 
 describe('PartDetailPage', () => {
   beforeEach(() => {
@@ -13,7 +21,11 @@ describe('PartDetailPage', () => {
   })
 
   it('renders the fetched part', async () => {
-    render(<PartDetailPage />)
+    render(
+      <CartProvider>
+        <PartDetailPage />
+      </CartProvider>
+    )
     await waitFor(() => expect(screen.getByText('Air Filter')).toBeInTheDocument())
     expect(screen.getByText(/Rs 850/)).toBeInTheDocument()
   })

@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useUser } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
+import { useCart } from '@/cart/CartContext'
 import PartCard from '@/components/PartCard'
 import Footer from '@/components/Footer'
 import { PartCategoryTabs } from '@/components/CategoryTabs'
@@ -26,8 +28,10 @@ interface PartFormState {
 const emptyForm: PartFormState = { type: 'BIKE_PART', partName: '', compatibleModel: '', price: 0, quantity: 0, imageUrl: '' }
 
 export default function PartsPage() {
-  const { user } = useUser()
+  const { user, isSignedIn } = useUser()
   const isAdmin = (user?.publicMetadata?.role as string | undefined) === 'ADMIN'
+  const { addToCart } = useCart()
+  const router = useRouter()
 
   const [parts, setParts] = useState<Part[]>([])
   const [loading, setLoading] = useState(true)
@@ -121,6 +125,14 @@ export default function PartsPage() {
                   part={p}
                   onEdit={isAdmin ? openEdit : undefined}
                   onDelete={isAdmin ? (part) => setDeleteTarget(part) : undefined}
+                  onAddToCart={
+                    !isAdmin
+                      ? (part) => {
+                          if (!isSignedIn) { router.push('/sign-in'); return }
+                          addToCart(part)
+                        }
+                      : undefined
+                  }
                 />
               ))}
             </div>
