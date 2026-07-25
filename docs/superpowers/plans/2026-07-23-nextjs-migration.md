@@ -8167,7 +8167,17 @@ Expected: 5 passed
 
 - [ ] **Step 9: Modify `web/lib/orders.ts`** — replace the `finalizeOrder` function (leave `createOrderDraft`, `setStripePaymentIntentId`, `findOrderByStripePaymentIntentId` untouched) with:
 
+**Note:** this version fixes a bug found during Task 14's review: writing `PAYMENT_REVIEW` and then throwing inside the same `$transaction` callback causes Prisma to roll back that write along with everything else, silently leaving the order `PENDING`. The fix writes `PAYMENT_REVIEW` in a separate statement after the transaction has already rolled back (in the `catch` block), and uses an atomic conditional decrement (`updateMany` with a `quantity: { gte }` guard) instead of a non-atomic read-then-write, closing a stock-overselling race under concurrent finalization.
+
 ```typescript
+class InsufficientStockError extends Error {
+  partName: string
+  constructor(partName: string) {
+    super(`Insufficient stock for part: ${partName}`)
+    this.partName = partName
+  }
+}
+
 export async function finalizeOrder(orderId: number): Promise<void> {
   const order = await prisma.order.findUnique({ where: { id: orderId }, include: { items: true } })
   if (!order) throw new ApiError(404, 'Order not found')
@@ -8175,20 +8185,33 @@ export async function finalizeOrder(orderId: number): Promise<void> {
 
   const lowStockPartIds: number[] = []
 
-  await prisma.$transaction(async (tx) => {
-    for (const item of order.items) {
-      const part = await tx.part.findUnique({ where: { id: item.partId } })
-      if (!part) throw new ApiError(404, `Part not found: ${item.partId}`)
-      const newQuantity = part.quantity - item.quantity
-      if (newQuantity < 0) {
-        await tx.order.update({ where: { id: orderId }, data: { status: 'PAYMENT_REVIEW' } })
-        throw new ApiError(409, `Insufficient stock for part: ${part.partName} after payment`)
+  try {
+    await prisma.$transaction(async (tx) => {
+      const current = await tx.order.findUnique({ where: { id: orderId } })
+      if (!current || current.status === 'PAID') return
+
+      for (const item of order.items) {
+        const result = await tx.part.updateMany({
+          where: { id: item.partId, quantity: { gte: item.quantity } },
+          data: { quantity: { decrement: item.quantity } },
+        })
+        if (result.count === 0) {
+          const part = await tx.part.findUnique({ where: { id: item.partId } })
+          throw new InsufficientStockError(part?.partName ?? `part ${item.partId}`)
+        }
+        const updated = await tx.part.findUnique({ where: { id: item.partId } })
+        if (updated && updated.quantity <= 5) lowStockPartIds.push(updated.id)
       }
-      await tx.part.update({ where: { id: part.id }, data: { quantity: newQuantity } })
-      if (newQuantity <= 5) lowStockPartIds.push(part.id)
+
+      await tx.order.update({ where: { id: orderId }, data: { status: 'PAID' } })
+    })
+  } catch (err) {
+    if (err instanceof InsufficientStockError) {
+      await prisma.order.update({ where: { id: orderId }, data: { status: 'PAYMENT_REVIEW' } })
+      throw new ApiError(409, `Insufficient stock for part: ${err.partName} after payment`)
     }
-    await tx.order.update({ where: { id: orderId }, data: { status: 'PAID' } })
-  })
+    throw err
+  }
 
   const updatedOrder = await prisma.order.findUnique({ where: { id: orderId }, include: { items: true } })
   if (updatedOrder) {
