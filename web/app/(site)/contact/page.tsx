@@ -1,0 +1,70 @@
+'use client'
+
+import { useState } from 'react'
+import Footer from '@/components/Footer'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Phone, Mail, MapPin } from 'lucide-react'
+
+export default function ContactPage() {
+  const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' })
+  const [submitting, setSubmitting] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitting(true)
+    setError(null)
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...form, phone: form.phone || null, subject: form.subject || null }),
+    })
+    setSubmitting(false)
+    if (res.ok) {
+      setSent(true)
+      setForm({ name: '', email: '', phone: '', subject: '', message: '' })
+    } else {
+      const body = await res.json().catch(() => ({}))
+      setError(body.message ?? 'Failed to send message')
+    }
+  }
+
+  return (
+    <>
+      <div className="py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-3xl font-bold text-zinc-900 mb-8">Contact Us</h1>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-1 space-y-6">
+              <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm"><Phone className="w-6 h-6 text-[#E60012] mb-3" /><h3 className="font-semibold text-zinc-900 mb-1">Phone</h3><p className="text-zinc-600">+977-1-XXXXXXX</p></div>
+              <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm"><Mail className="w-6 h-6 text-[#E60012] mb-3" /><h3 className="font-semibold text-zinc-900 mb-1">Email</h3><p className="text-zinc-600">info@suzukimotorcycle.com.np</p></div>
+              <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm"><MapPin className="w-6 h-6 text-[#E60012] mb-3" /><h3 className="font-semibold text-zinc-900 mb-1">Address</h3><p className="text-zinc-600">Balkumari, Lalitpur, Nepal</p></div>
+            </div>
+            <div className="lg:col-span-2">
+              {sent ? (
+                <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm text-center">
+                  <p className="text-zinc-700 font-medium">Message sent! We will get back to you soon.</p>
+                </div>
+              ) : (
+                <form onSubmit={onSubmit} className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm space-y-6">
+                  {error && <p className="text-red-600 text-sm">{error}</p>}
+                  <div><Label htmlFor="name">Full Name *</Label><Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="mt-1" /></div>
+                  <div><Label htmlFor="email">Email *</Label><Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required className="mt-1" /></div>
+                  <div><Label htmlFor="phone">Phone Number</Label><Input id="phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="mt-1" /></div>
+                  <div><Label htmlFor="subject">Subject *</Label><Input id="subject" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} required className="mt-1" /></div>
+                  <div><Label htmlFor="message">Message *</Label><Textarea id="message" value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} rows={6} required className="mt-1" /></div>
+                  <Button type="submit" disabled={submitting} className="w-full bg-[#E60012] hover:bg-[#C5000F]">{submitting ? 'Sending...' : 'Send Message'}</Button>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      <Footer />
+    </>
+  )
+}
