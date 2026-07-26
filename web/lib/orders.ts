@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { ApiError } from '@/lib/api-error'
+import { sendOrderConfirmationEmail, sendOrderAlertAdminEmail, sendLowStockAlertEmail } from '@/lib/email'
 import type { User, Order, OrderItem } from '@prisma/client'
 import type { OrderItemInput } from '@/lib/validations/order'
 
@@ -52,6 +53,8 @@ export async function finalizeOrder(orderId: number): Promise<void> {
   if (!order) throw new ApiError(404, 'Order not found')
   if (order.status === 'PAID') return
 
+  const lowStockPartIds: number[] = []
+
   try {
     await prisma.$transaction(async (tx) => {
       const current = await tx.order.findUnique({ where: { id: orderId } })
@@ -66,6 +69,8 @@ export async function finalizeOrder(orderId: number): Promise<void> {
           const part = await tx.part.findUnique({ where: { id: item.partId } })
           throw new InsufficientStockError(part?.partName ?? `part ${item.partId}`)
         }
+        const updated = await tx.part.findUnique({ where: { id: item.partId } })
+        if (updated && updated.quantity <= 5) lowStockPartIds.push(updated.id)
       }
 
       await tx.order.update({ where: { id: orderId }, data: { status: 'PAID' } })
@@ -76,6 +81,17 @@ export async function finalizeOrder(orderId: number): Promise<void> {
       throw new ApiError(409, `Insufficient stock for part: ${err.partName} after payment`)
     }
     throw err
+  }
+
+  const updatedOrder = await prisma.order.findUnique({ where: { id: orderId }, include: { items: true } })
+  if (updatedOrder) {
+    await sendOrderConfirmationEmail(updatedOrder)
+    await sendOrderAlertAdminEmail(updatedOrder)
+  }
+
+  for (const partId of lowStockPartIds) {
+    const part = await prisma.part.findUnique({ where: { id: partId } })
+    if (part) await sendLowStockAlertEmail(part)
   }
 }
 

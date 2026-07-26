@@ -12,6 +12,12 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
+vi.mock('@/lib/email', () => ({
+  sendOrderConfirmationEmail: vi.fn(),
+  sendOrderAlertAdminEmail: vi.fn(),
+  sendLowStockAlertEmail: vi.fn(),
+}))
+
 import { prisma } from '@/lib/prisma'
 import { createOrderDraft, finalizeOrder } from '@/lib/orders'
 import { ApiError } from '@/lib/api-error'
