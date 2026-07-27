@@ -18,12 +18,14 @@ export async function requireUser(): Promise<User> {
     if (!email) throw new ApiError(400, 'User has no email address')
 
     const role: Role = clerkUser.publicMetadata?.role === 'ADMIN' ? 'ADMIN' : 'CLIENT'
+    const fullName = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || null
 
     user = await prisma.user.upsert({
       where: { clerkUserId: userId },
       create: {
         clerkUserId: userId,
         username: clerkUser.username ?? email,
+        fullName,
         email,
         phoneNumber: clerkUser.primaryPhoneNumber?.phoneNumber ?? null,
         role,

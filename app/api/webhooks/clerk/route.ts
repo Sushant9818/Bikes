@@ -9,6 +9,8 @@ interface ClerkUserEvent {
   data: {
     id: string
     username: string | null
+    first_name: string | null
+    last_name: string | null
     email_addresses: { id: string; email_address: string }[]
     primary_email_address_id: string | null
     phone_numbers: { id: string; phone_number: string }[]
@@ -59,6 +61,7 @@ export async function POST(req: Request) {
     ?? data.phone_numbers[0]?.phone_number ?? null
   const role: Role = data.public_metadata?.role === 'ADMIN' ? 'ADMIN' : 'CLIENT'
   const username = data.username ?? primaryEmail ?? data.id
+  const fullName = [data.first_name, data.last_name].filter(Boolean).join(' ') || null
 
   if (!primaryEmail) {
     return NextResponse.json({ message: 'User has no email address' }, { status: 400 })
@@ -69,12 +72,14 @@ export async function POST(req: Request) {
     create: {
       clerkUserId: data.id,
       username,
+      fullName,
       email: primaryEmail,
       phoneNumber: primaryPhone,
       role,
     },
     update: {
       username,
+      fullName,
       email: primaryEmail,
       phoneNumber: primaryPhone,
       role,

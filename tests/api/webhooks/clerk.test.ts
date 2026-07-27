@@ -56,6 +56,30 @@ describe('POST /api/webhooks/clerk', () => {
     )
   })
 
+  it('combines first_name and last_name into fullName on the mirrored row', async () => {
+    verifyMock.mockReturnValue({
+      type: 'user.created',
+      data: {
+        id: 'user_123',
+        username: 'johndoe',
+        first_name: 'John',
+        last_name: 'Doe',
+        email_addresses: [{ id: 'email_1', email_address: 'john@example.com' }],
+        primary_email_address_id: 'email_1',
+        phone_numbers: [],
+        primary_phone_number_id: null,
+        public_metadata: {},
+      },
+    })
+
+    const req = new Request('http://localhost/api/webhooks/clerk', { method: 'POST', body: '{}' })
+    await POST(req)
+
+    expect(prisma.user.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ create: expect.objectContaining({ fullName: 'John Doe' }) })
+    )
+  })
+
   it('maps publicMetadata.role ADMIN through to the mirrored row', async () => {
     verifyMock.mockReturnValue({
       type: 'user.updated',
