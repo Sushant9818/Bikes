@@ -16,6 +16,7 @@ interface ClerkUserEvent {
     phone_numbers: { id: string; phone_number: string }[]
     primary_phone_number_id: string | null
     public_metadata: { role?: string }
+    unsafe_metadata: { phoneNumber?: string }
   }
 }
 
@@ -57,8 +58,13 @@ export async function POST(req: Request) {
 
   const primaryEmail = data.email_addresses.find((e) => e.id === data.primary_email_address_id)?.email_address
     ?? data.email_addresses[0]?.email_address
+  // Real verified phone (added later as an MFA factor) takes priority over the
+  // unverified value collected at sign-up, since phone_number sign-up itself is
+  // gated behind Clerk's Pro plan — see app/sign-up/[[...sign-up]]/page.tsx.
   const primaryPhone = data.phone_numbers.find((p) => p.id === data.primary_phone_number_id)?.phone_number
-    ?? data.phone_numbers[0]?.phone_number ?? null
+    ?? data.phone_numbers[0]?.phone_number
+    ?? data.unsafe_metadata?.phoneNumber
+    ?? null
   const role: Role = data.public_metadata?.role === 'ADMIN' ? 'ADMIN' : 'CLIENT'
   const username = data.username ?? primaryEmail ?? data.id
   const fullName = [data.first_name, data.last_name].filter(Boolean).join(' ') || null

@@ -17,8 +17,6 @@ function errorMessage(err: unknown, fallback: string): string {
   return fallback
 }
 
-type Step = 'form' | 'verify_email' | 'verify_phone'
-
 function CardShell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4">
@@ -46,30 +44,9 @@ export default function SignUpPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [code, setCode] = useState('')
-  const [step, setStep] = useState<Step>('form')
+  const [pendingVerification, setPendingVerification] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-
-  const needsPhoneVerification = () => {
-    const fields = signUp?.unverifiedFields ?? []
-    return fields.includes('phone_number')
-  }
-
-  const advanceAfterVerification = async () => {
-    if (!signUp || !setActive) return
-    if (needsPhoneVerification()) {
-      await signUp.preparePhoneNumberVerification({ strategy: 'phone_code' })
-      setCode('')
-      setStep('verify_phone')
-      return
-    }
-    if (signUp.status === 'complete') {
-      await setActive({ session: signUp.createdSessionId })
-      router.push('/')
-    } else {
-      setError('Registration could not be completed — please try again.')
-    }
-  }
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -81,17 +58,22 @@ export default function SignUpPage() {
     }
     const [firstName, ...rest] = fullName.trim().split(/\s+/)
     const lastName = rest.join(' ') || undefined
+    const normalizedPhone = phone.replace(/[\s()-]/g, '')
     setLoading(true)
     try {
+      // Phone number is stored as unsafeMetadata rather than Clerk's native phone_number
+      // attribute — that attribute (and its SMS verification) is gated behind Clerk's Pro
+      // plan. This keeps the phone as an unverified contact field, synced into the local
+      // User row the same way the profile page's phone field already works.
       await signUp.create({
         emailAddress: email,
         password,
         firstName: firstName || undefined,
         lastName,
-        phoneNumber: phone.replace(/[\s()-]/g, '') || undefined,
+        unsafeMetadata: normalizedPhone ? { phoneNumber: normalizedPhone } : undefined,
       })
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
-      setStep('verify_email')
+      setPendingVerification(true)
     } catch (err) {
       setError(errorMessage(err, 'Registration failed'))
     } finally {
@@ -99,28 +81,13 @@ export default function SignUpPage() {
     }
   }
 
-  const onVerifyEmail = async (e: FormEvent) => {
+  const onVerify = async (e: FormEvent) => {
     e.preventDefault()
     if (!isLoaded) return
     setError('')
     setLoading(true)
     try {
-      await signUp.attemptEmailAddressVerification({ code })
-      await advanceAfterVerification()
-    } catch (err) {
-      setError(errorMessage(err, 'Invalid verification code'))
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const onVerifyPhone = async (e: FormEvent) => {
-    e.preventDefault()
-    if (!isLoaded) return
-    setError('')
-    setLoading(true)
-    try {
-      const result = await signUp.attemptPhoneNumberVerification({ code })
+      const result = await signUp.attemptEmailAddressVerification({ code })
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId })
         router.push('/')
@@ -134,45 +101,17 @@ export default function SignUpPage() {
     }
   }
 
-  if (step === 'verify_email') {
+  if (pendingVerification) {
     return (
       <CardShell title="Verify Email">
         <p className="text-center text-zinc-600 text-sm mb-6">
           We sent a verification code to <span className="font-medium">{email}</span>. Enter it below.
         </p>
-        <form onSubmit={onVerifyEmail} className="space-y-6">
+        <form onSubmit={onVerify} className="space-y-6">
           <div>
             <Label htmlFor="code">Verification Code</Label>
             <Input
               id="code"
-              autoComplete="one-time-code"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              className="mt-1"
-              placeholder="123456"
-              required
-            />
-          </div>
-          {error && <p className="text-[#E60012] text-sm">{error}</p>}
-          <Button type="submit" className="w-full bg-[#E60012] hover:bg-[#C5000F] text-white" disabled={loading}>
-            {loading ? 'Verifying...' : 'Verify'}
-          </Button>
-        </form>
-      </CardShell>
-    )
-  }
-
-  if (step === 'verify_phone') {
-    return (
-      <CardShell title="Verify Phone">
-        <p className="text-center text-zinc-600 text-sm mb-6">
-          We sent a verification code to <span className="font-medium">{phone}</span>. Enter it below.
-        </p>
-        <form onSubmit={onVerifyPhone} className="space-y-6">
-          <div>
-            <Label htmlFor="phoneCode">Verification Code</Label>
-            <Input
-              id="phoneCode"
               autoComplete="one-time-code"
               value={code}
               onChange={(e) => setCode(e.target.value)}

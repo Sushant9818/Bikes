@@ -19,6 +19,12 @@ export async function requireUser(): Promise<User> {
 
     const role: Role = clerkUser.publicMetadata?.role === 'ADMIN' ? 'ADMIN' : 'CLIENT'
     const fullName = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || null
+    // Real verified phone (added later as an MFA factor) takes priority over the
+    // unverified value collected at sign-up, since phone_number sign-up itself is
+    // gated behind Clerk's Pro plan — see app/sign-up/[[...sign-up]]/page.tsx.
+    const phoneNumber =
+      clerkUser.primaryPhoneNumber?.phoneNumber ??
+      (typeof clerkUser.unsafeMetadata?.phoneNumber === 'string' ? clerkUser.unsafeMetadata.phoneNumber : null)
 
     user = await prisma.user.upsert({
       where: { clerkUserId: userId },
@@ -27,7 +33,7 @@ export async function requireUser(): Promise<User> {
         username: clerkUser.username ?? email,
         fullName,
         email,
-        phoneNumber: clerkUser.primaryPhoneNumber?.phoneNumber ?? null,
+        phoneNumber,
         role,
       },
       update: {},
