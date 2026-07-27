@@ -26,7 +26,7 @@ export default function ProductCard({ vehicle, serialNumber, onEdit, onDelete }:
           #{serialNumber}
         </span>
       )}
-      <div className="relative aspect-[4/3] bg-gradient-to-br from-zinc-100 to-zinc-200 overflow-hidden">
+      <Link href={`/products/${vehicle.id}`} className="relative aspect-[4/3] bg-gradient-to-br from-zinc-100 to-zinc-200 overflow-hidden block">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={imgSrc}
@@ -35,13 +35,15 @@ export default function ProductCard({ vehicle, serialNumber, onEdit, onDelete }:
           onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE }}
         />
         {isLowStock && <Badge variant="destructive" className="absolute bottom-3 left-3 z-10 shadow">Low Stock</Badge>}
-      </div>
+      </Link>
       <div className="flex flex-col flex-1 p-5">
         <div className="flex items-start justify-between gap-2 mb-2">
           <Badge className="bg-[#E60012]/10 text-[#E60012] border-0">{vehicleTypeLabel(vehicle.type)}</Badge>
           <Badge variant="secondary" className="text-xs shrink-0">Stock: {vehicle.quantity ?? 0}</Badge>
         </div>
-        <h3 className="font-bold text-lg text-zinc-900 leading-tight mt-0.5 mb-1">{vehicle.modelName}</h3>
+        <Link href={`/products/${vehicle.id}`}>
+          <h3 className="font-bold text-lg text-zinc-900 leading-tight mt-0.5 mb-1 hover:text-[#E60012] transition-colors">{vehicle.modelName}</h3>
+        </Link>
         <p className="text-sm text-zinc-500 line-clamp-2 mb-4 flex-1">{vehicleDescription(vehicle)}</p>
         <p className="font-bold text-xl text-[#E60012] mb-3">{formatNPR(vehicle.price)}</p>
         {isAdminCard ? (
