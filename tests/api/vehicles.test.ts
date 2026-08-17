@@ -26,6 +26,36 @@ describe('GET /api/vehicles', () => {
       expect.objectContaining({ where: expect.objectContaining({ brand: 'Suzuki', type: 'BIKE' }) })
     )
   })
+
+  it('filters by min and max price', async () => {
+    ;(prisma.vehicle.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
+    const req = new Request('http://localhost/api/vehicles?minPrice=1000&maxPrice=5000')
+    const res = await GET(req as never)
+    expect(res.status).toBe(200)
+    expect(prisma.vehicle.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ price: { gte: 1000, lte: 5000 } }) })
+    )
+  })
+
+  it('sorts by price ascending', async () => {
+    ;(prisma.vehicle.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
+    const req = new Request('http://localhost/api/vehicles?sort=price_asc')
+    const res = await GET(req as never)
+    expect(res.status).toBe(200)
+    expect(prisma.vehicle.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { price: 'asc' } })
+    )
+  })
+
+  it('sorts by price descending', async () => {
+    ;(prisma.vehicle.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
+    const req = new Request('http://localhost/api/vehicles?sort=price_desc')
+    const res = await GET(req as never)
+    expect(res.status).toBe(200)
+    expect(prisma.vehicle.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { price: 'desc' } })
+    )
+  })
 })
 
 describe('POST /api/vehicles', () => {

@@ -24,6 +24,26 @@ describe('GET /api/parts', () => {
       expect.objectContaining({ where: expect.objectContaining({ brand: 'Suzuki', type: 'BIKE_PART' }) })
     )
   })
+
+  it('filters by min and max price', async () => {
+    ;(prisma.part.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
+    const req = new Request('http://localhost/api/parts?minPrice=100&maxPrice=2000')
+    const res = await GET(req as never)
+    expect(res.status).toBe(200)
+    expect(prisma.part.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ price: { gte: 100, lte: 2000 } }) })
+    )
+  })
+
+  it('sorts by price descending', async () => {
+    ;(prisma.part.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
+    const req = new Request('http://localhost/api/parts?sort=price_desc')
+    const res = await GET(req as never)
+    expect(res.status).toBe(200)
+    expect(prisma.part.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { price: 'desc' } })
+    )
+  })
 })
 
 describe('POST /api/parts', () => {

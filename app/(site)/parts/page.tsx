@@ -5,6 +5,7 @@ import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/cart/CartContext'
 import PartCard from '@/components/PartCard'
+import CatalogFilters, { type SortOption } from '@/components/CatalogFilters'
 import Footer from '@/components/Footer'
 import { PartCategoryTabs } from '@/components/CategoryTabs'
 import AddEditModal from '@/components/AddEditModal'
@@ -37,6 +38,9 @@ export default function PartsPage() {
   const [loading, setLoading] = useState(true)
   const [typeFilter, setTypeFilter] = useState<'BIKE_PART' | 'SCOOTER_PART'>('BIKE_PART')
   const [searchQuery, setSearchQuery] = useState('')
+  const [minPrice, setMinPrice] = useState('')
+  const [maxPrice, setMaxPrice] = useState('')
+  const [sort, setSort] = useState<SortOption>('')
   const [modalOpen, setModalOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Part | null>(null)
   const [editing, setEditing] = useState<Part | null>(null)
@@ -48,14 +52,17 @@ export default function PartsPage() {
     setLoading(true)
     const params = new URLSearchParams({ type: typeFilter })
     if (searchQuery.trim()) params.set('q', searchQuery.trim())
+    if (minPrice) params.set('minPrice', minPrice)
+    if (maxPrice) params.set('maxPrice', maxPrice)
+    if (sort) params.set('sort', sort)
     const res = await fetch(`/api/parts?${params}`)
     setParts(res.ok ? await res.json() : [])
     setLoading(false)
   }
 
-  useEffect(() => { fetchData() }, [typeFilter])
+  useEffect(() => { fetchData() }, [typeFilter, minPrice, maxPrice, sort])
 
-  const displayList = useMemo(() => [...parts].sort((a, b) => a.id - b.id), [parts])
+  const displayList = useMemo(() => (sort ? parts : [...parts].sort((a, b) => a.id - b.id)), [parts, sort])
 
   const openAdd = () => { setEditing(null); setForm({ ...emptyForm, type: typeFilter }); setModalOpen(true) }
   const openEdit = (p: Part) => {
@@ -99,15 +106,25 @@ export default function PartsPage() {
             )}
           </div>
 
-          <div className="mb-8 flex flex-col sm:flex-row gap-4">
-            <PartCategoryTabs value={typeFilter} onValueChange={(v) => setTypeFilter(v as 'BIKE_PART' | 'SCOOTER_PART')} />
-            <form onSubmit={(e) => { e.preventDefault(); fetchData() }} className="flex-1 flex gap-2 min-w-0">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                <Input placeholder="Search by name or category..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 rounded-xl" />
-              </div>
-              <Button type="submit" variant="outline" className="rounded-xl shrink-0">Search</Button>
-            </form>
+          <div className="mb-8 space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <PartCategoryTabs value={typeFilter} onValueChange={(v) => setTypeFilter(v as 'BIKE_PART' | 'SCOOTER_PART')} />
+              <form onSubmit={(e) => { e.preventDefault(); fetchData() }} className="flex-1 flex gap-2 min-w-0">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                  <Input placeholder="Search by name or category..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 rounded-xl" />
+                </div>
+                <Button type="submit" variant="outline" className="rounded-xl shrink-0">Search</Button>
+              </form>
+            </div>
+            <CatalogFilters
+              minPrice={minPrice}
+              maxPrice={maxPrice}
+              sort={sort}
+              onMinPriceChange={setMinPrice}
+              onMaxPriceChange={setMaxPrice}
+              onSortChange={setSort}
+            />
           </div>
 
           {loading ? (

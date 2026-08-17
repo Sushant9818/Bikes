@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useUser } from '@clerk/nextjs'
 import ProductCard from '@/components/ProductCard'
+import CatalogFilters, { type SortOption } from '@/components/CatalogFilters'
 import Footer from '@/components/Footer'
 import AddEditModal from '@/components/AddEditModal'
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog'
@@ -38,6 +39,9 @@ export default function VehicleCatalogPage({ type, heading, addLabel }: VehicleC
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [minPrice, setMinPrice] = useState('')
+  const [maxPrice, setMaxPrice] = useState('')
+  const [sort, setSort] = useState<SortOption>('')
   const [modalOpen, setModalOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Vehicle | null>(null)
   const [editing, setEditing] = useState<Vehicle | null>(null)
@@ -49,14 +53,17 @@ export default function VehicleCatalogPage({ type, heading, addLabel }: VehicleC
     setLoading(true)
     const params = new URLSearchParams({ type })
     if (searchQuery.trim()) params.set('q', searchQuery.trim())
+    if (minPrice) params.set('minPrice', minPrice)
+    if (maxPrice) params.set('maxPrice', maxPrice)
+    if (sort) params.set('sort', sort)
     const res = await fetch(`/api/vehicles?${params}`)
     setVehicles(res.ok ? await res.json() : [])
     setLoading(false)
   }
 
-  useEffect(() => { fetchData() }, [type])
+  useEffect(() => { fetchData() }, [type, minPrice, maxPrice, sort])
 
-  const displayList = useMemo(() => [...vehicles].sort((a, b) => a.id - b.id), [vehicles])
+  const displayList = useMemo(() => (sort ? vehicles : [...vehicles].sort((a, b) => a.id - b.id)), [vehicles, sort])
 
   const openAdd = () => { setEditing(null); setForm(emptyForm); setModalOpen(true) }
   const openEdit = (v: Vehicle) => {
@@ -100,16 +107,26 @@ export default function VehicleCatalogPage({ type, heading, addLabel }: VehicleC
             )}
           </div>
 
-          <form
-            onSubmit={(e) => { e.preventDefault(); fetchData() }}
-            className="mb-8 flex gap-2"
-          >
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-              <Input placeholder="Search by name..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 rounded-xl" />
-            </div>
-            <Button type="submit" variant="outline" className="rounded-xl shrink-0">Search</Button>
-          </form>
+          <div className="mb-8 space-y-4">
+            <form
+              onSubmit={(e) => { e.preventDefault(); fetchData() }}
+              className="flex gap-2"
+            >
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                <Input placeholder="Search by name..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 rounded-xl" />
+              </div>
+              <Button type="submit" variant="outline" className="rounded-xl shrink-0">Search</Button>
+            </form>
+            <CatalogFilters
+              minPrice={minPrice}
+              maxPrice={maxPrice}
+              sort={sort}
+              onMinPriceChange={setMinPrice}
+              onMaxPriceChange={setMaxPrice}
+              onSortChange={setSort}
+            />
+          </div>
 
           {loading ? (
             <LoadingSpinner className="py-24" label="Loading vehicles..." />

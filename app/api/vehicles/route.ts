@@ -10,14 +10,25 @@ export async function GET(req: NextRequest) {
     const q = searchParams.get('q')
     const typeParam = searchParams.get('type')
     const type = typeParam ? vehicleTypeEnum.parse(typeParam) : undefined
+    const minPrice = searchParams.get('minPrice')
+    const maxPrice = searchParams.get('maxPrice')
+    const sort = searchParams.get('sort')
+
+    const orderBy =
+      sort === 'price_asc' ? { price: 'asc' as const } :
+      sort === 'price_desc' ? { price: 'desc' as const } :
+      { id: 'asc' as const }
 
     const vehicles = await prisma.vehicle.findMany({
       where: {
         brand: 'Suzuki',
         ...(type ? { type } : {}),
         ...(q ? { modelName: { contains: q, mode: 'insensitive' as const } } : {}),
+        ...(minPrice || maxPrice
+          ? { price: { ...(minPrice ? { gte: Number(minPrice) } : {}), ...(maxPrice ? { lte: Number(maxPrice) } : {}) } }
+          : {}),
       },
-      orderBy: { id: 'asc' },
+      orderBy,
     })
     return NextResponse.json(vehicles)
   } catch (err) {
