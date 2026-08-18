@@ -26,7 +26,7 @@ export default function HomePage() {
       <section className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold text-zinc-900">New Arrivals</h2>
+            <h2 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">New Arrivals</h2>
             <Button asChild variant="outline" className="border-[#E60012] text-[#E60012] hover:bg-[#E60012] hover:text-white">
               <Link href="/bikes">View All →</Link>
             </Button>

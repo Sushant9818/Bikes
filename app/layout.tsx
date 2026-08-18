@@ -26,7 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <head>
           <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         </head>
-        <body>
+        <body className="bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
           <ThemeProvider>
             <CartProvider>{children}</CartProvider>
           </ThemeProvider>

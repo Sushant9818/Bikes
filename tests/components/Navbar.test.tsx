@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import Navbar from '@/components/Navbar'
+import { ThemeProvider } from '@/components/ThemeProvider'
 
 vi.mock('@clerk/nextjs', () => ({
   useUser: () => ({ isSignedIn: false, user: null }),
@@ -13,13 +14,13 @@ vi.mock('next/navigation', () => ({
 
 describe('Navbar', () => {
   it('shows Login/Register when signed out', () => {
-    render(<Navbar />)
+    render(<ThemeProvider><Navbar /></ThemeProvider>)
     expect(screen.getByRole('link', { name: 'Login' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Register' })).toBeInTheDocument()
   })
 
   it('renders the primary nav links', () => {
-    render(<Navbar />)
+    render(<ThemeProvider><Navbar /></ThemeProvider>)
     expect(screen.getByRole('link', { name: 'Bikes' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Book Service' })).toBeInTheDocument()
   })
