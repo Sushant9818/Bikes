@@ -16,9 +16,9 @@ export default function CartPage() {
       <>
         <div className="py-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-2xl border border-zinc-200 p-12 text-center">
-              <ShoppingBag className="w-16 h-16 text-zinc-300 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-zinc-900 mb-2">Your cart is empty</h3>
+            <div className="bg-white rounded-2xl border border-zinc-200 p-12 text-center dark:bg-zinc-900 dark:border-zinc-800">
+              <ShoppingBag className="w-16 h-16 text-zinc-300 mx-auto mb-4 dark:text-zinc-600" />
+              <h3 className="text-xl font-bold text-zinc-900 mb-2 dark:text-zinc-100">Your cart is empty</h3>
               <Button asChild className="bg-[#E60012] hover:bg-[#C5000F]"><Link href="/parts">Browse Parts</Link></Button>
             </div>
           </div>
@@ -33,25 +33,25 @@ export default function CartPage() {
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-8">
-            <h1 className="text-3xl font-bold text-zinc-900">Shopping Cart</h1>
+            <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Shopping Cart</h1>
             <Badge variant="secondary">{items.length} item{items.length !== 1 ? 's' : ''}</Badge>
           </div>
 
-          <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden mb-6 shadow-sm">
-            <div className="divide-y divide-zinc-200">
+          <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden mb-6 shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
+            <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
               {items.map((item) => (
                 <div key={item.partId} className="p-6 flex items-center justify-between">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-zinc-900">{item.partName}</h3>
-                    <p className="text-sm text-zinc-600 mt-1">{formatNPR(item.price)} each</p>
+                    <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">{item.partName}</h3>
+                    <p className="text-sm text-zinc-600 mt-1 dark:text-zinc-400">{formatNPR(item.price)} each</p>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 border border-zinc-200 rounded-xl">
+                    <div className="flex items-center gap-2 border border-zinc-200 rounded-xl dark:border-zinc-800">
                       <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => updateQuantity(item.partId, item.quantity - 1)}><Minus className="w-4 h-4" /></Button>
                       <span className="w-12 text-center font-semibold">{item.quantity}</span>
                       <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => updateQuantity(item.partId, item.quantity + 1)}><Plus className="w-4 h-4" /></Button>
                     </div>
-                    <div className="w-32 text-right"><p className="font-bold text-zinc-900">{formatNPR(item.price * item.quantity)}</p></div>
+                    <div className="w-32 text-right"><p className="font-bold text-zinc-900 dark:text-zinc-100">{formatNPR(item.price * item.quantity)}</p></div>
                     <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.partId)} className="text-[#E60012] hover:text-[#C5000F]"><Trash2 className="w-5 h-5" /></Button>
                   </div>
                 </div>
@@ -59,7 +59,7 @@ export default function CartPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
+          <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
             <div className="flex justify-between text-lg font-bold mb-6">
               <span>Total</span><span className="text-[#E60012]">{formatNPR(totalAmount)}</span>
             </div>

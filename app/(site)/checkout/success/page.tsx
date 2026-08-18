@@ -17,14 +17,14 @@ function CheckoutSuccessContent() {
         {status === 'succeeded' ? (
           <>
             <CheckCircle className="w-20 h-20 text-green-600 mx-auto mb-6" />
-            <h1 className="text-3xl font-bold text-zinc-900 mb-4">Payment Successful!</h1>
-            <p className="text-zinc-600 mb-8">Your order has been placed successfully. You will receive an email confirmation shortly.</p>
+            <h1 className="text-3xl font-bold text-zinc-900 mb-4 dark:text-zinc-100">Payment Successful!</h1>
+            <p className="text-zinc-600 mb-8 dark:text-zinc-400">Your order has been placed successfully. You will receive an email confirmation shortly.</p>
             <Button asChild className="bg-[#E60012] hover:bg-[#C5000F]"><Link href="/">Return to Home</Link></Button>
           </>
         ) : (
           <>
-            <h1 className="text-3xl font-bold text-zinc-900 mb-4">Checkout</h1>
-            <p className="text-zinc-600 mb-8">
+            <h1 className="text-3xl font-bold text-zinc-900 mb-4 dark:text-zinc-100">Checkout</h1>
+            <p className="text-zinc-600 mb-8 dark:text-zinc-400">
               {status === 'processing' ? 'Your payment is being processed...' : 'Something went wrong. Please try again.'}
             </p>
             <Button asChild className="bg-[#E60012] hover:bg-[#C5000F]"><Link href="/checkout">Back to Checkout</Link></Button>

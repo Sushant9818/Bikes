@@ -107,8 +107,8 @@ export default function CheckoutPage() {
       <>
         <div className="py-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl mx-auto">
-            <div className="bg-white rounded-2xl border border-zinc-200 p-12 text-center shadow-sm">
-              <p className="text-zinc-600 text-lg mb-4">Your cart is empty.</p>
+            <div className="bg-white rounded-2xl border border-zinc-200 p-12 text-center shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
+              <p className="text-zinc-600 text-lg mb-4 dark:text-zinc-400">Your cart is empty.</p>
               <Button asChild className="bg-[#E60012] hover:bg-[#C5000F]"><Link href="/parts">Browse Parts</Link></Button>
             </div>
           </div>
@@ -122,12 +122,12 @@ export default function CheckoutPage() {
     <>
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-zinc-900 mb-8">Checkout</h1>
+          <h1 className="text-3xl font-bold text-zinc-900 mb-8 dark:text-zinc-100">Checkout</h1>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
               {step === 'form' ? (
-                <form onSubmit={onFormSubmit} className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm space-y-6">
-                  <h2 className="text-xl font-bold text-zinc-900 mb-4">Shipping Information</h2>
+                <form onSubmit={onFormSubmit} className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm space-y-6 dark:bg-zinc-900 dark:border-zinc-800">
+                  <h2 className="text-xl font-bold text-zinc-900 mb-4 dark:text-zinc-100">Shipping Information</h2>
                   {error && <p className="text-red-600 text-sm">{error}</p>}
                   <div><Label htmlFor="customerName">Full Name *</Label><Input id="customerName" value={formData.customerName} onChange={(e) => setFormData({ ...formData, customerName: e.target.value })} required className="mt-1" /></div>
                   <div><Label htmlFor="phone">Phone *</Label><Input id="phone" type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} required className="mt-1" /></div>
@@ -138,8 +138,8 @@ export default function CheckoutPage() {
                   </Button>
                 </form>
               ) : (
-                <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
-                  <h2 className="text-xl font-bold text-zinc-900 mb-4">Pay with Card</h2>
+                <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
+                  <h2 className="text-xl font-bold text-zinc-900 mb-4 dark:text-zinc-100">Pay with Card</h2>
                   {clientSecret && (
                     <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe', variables: { colorPrimary: '#E60012' } } }}>
                       <PaymentForm totalAmount={totalAmount} onSuccess={onPaymentSuccess} />
@@ -149,17 +149,17 @@ export default function CheckoutPage() {
               )}
             </div>
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm sticky top-24">
-                <h3 className="font-semibold text-zinc-900 mb-4">Order Summary</h3>
+              <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm sticky top-24 dark:bg-zinc-900 dark:border-zinc-800">
+                <h3 className="font-semibold text-zinc-900 mb-4 dark:text-zinc-100">Order Summary</h3>
                 <div className="space-y-3 mb-4">
                   {items.map((item) => (
                     <div key={item.partId} className="flex justify-between text-sm">
-                      <span className="text-zinc-600">{item.partName} × {item.quantity}</span>
+                      <span className="text-zinc-600 dark:text-zinc-400">{item.partName} × {item.quantity}</span>
                       <span className="font-semibold">{formatNPR(item.price * item.quantity)}</span>
                     </div>
                   ))}
                 </div>
-                <div className="border-t border-zinc-200 pt-4 flex justify-between font-bold text-lg">
+                <div className="border-t border-zinc-200 pt-4 flex justify-between font-bold text-lg dark:border-zinc-800">
                   <span>Total</span><span className="text-[#E60012]">{formatNPR(totalAmount)}</span>
                 </div>
               </div>
