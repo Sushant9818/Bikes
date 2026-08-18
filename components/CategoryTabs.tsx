@@ -18,7 +18,7 @@ interface TabsProps {
 export function VehicleCategoryTabs({ value, onValueChange }: TabsProps) {
   return (
     <Tabs value={value} onValueChange={onValueChange} className="w-full">
-      <TabsList className="bg-zinc-100 p-1 rounded-xl w-full sm:w-auto">
+      <TabsList className="bg-zinc-100 p-1 rounded-xl w-full sm:w-auto dark:bg-zinc-800">
         {vehicleTabs.map((tab) => (
           <TabsTrigger key={tab.value} value={tab.value} className="rounded-lg data-[state=active]:bg-[#E60012] data-[state=active]:text-white">
             {tab.label}
@@ -32,7 +32,7 @@ export function VehicleCategoryTabs({ value, onValueChange }: TabsProps) {
 export function PartCategoryTabs({ value, onValueChange }: TabsProps) {
   return (
     <Tabs value={value} onValueChange={onValueChange} className="w-full">
-      <TabsList className="bg-zinc-100 p-1 rounded-xl w-full sm:w-auto">
+      <TabsList className="bg-zinc-100 p-1 rounded-xl w-full sm:w-auto dark:bg-zinc-800">
         {partTabs.map((tab) => (
           <TabsTrigger key={tab.value} value={tab.value} className="rounded-lg data-[state=active]:bg-[#E60012] data-[state=active]:text-white">
             {tab.label}

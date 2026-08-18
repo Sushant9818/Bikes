@@ -17,7 +17,7 @@ export default function AdminCardActions({ onEdit, onDelete, className = '' }: A
           type="button"
           variant="outline"
           size="sm"
-          className="flex-1 rounded-xl border-zinc-300 hover:border-[#E60012] hover:text-[#E60012]"
+          className="flex-1 rounded-xl border-zinc-300 hover:border-[#E60012] hover:text-[#E60012] dark:border-zinc-700"
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit() }}
         >
           <Pencil className="w-3.5 h-3.5 mr-1.5" /> Edit
