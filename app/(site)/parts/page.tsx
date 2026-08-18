@@ -89,8 +89,8 @@ export default function PartsPage() {
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-zinc-900">{typeFilter === 'BIKE_PART' ? 'Suzuki Bike Parts' : 'Suzuki Scooter Parts'}</h1>
-              <p className="text-zinc-600 text-sm mt-1">{displayList.length} part(s)</p>
+              <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">{typeFilter === 'BIKE_PART' ? 'Suzuki Bike Parts' : 'Suzuki Scooter Parts'}</h1>
+              <p className="text-zinc-600 text-sm mt-1 dark:text-zinc-400">{displayList.length} part(s)</p>
             </div>
             {isAdmin && (
               <Button onClick={openAdd} className="bg-[#E60012] hover:bg-[#C5000F] rounded-xl">
@@ -103,7 +103,7 @@ export default function PartsPage() {
             <PartCategoryTabs value={typeFilter} onValueChange={(v) => setTypeFilter(v as 'BIKE_PART' | 'SCOOTER_PART')} />
             <form onSubmit={(e) => { e.preventDefault(); fetchData() }} className="flex-1 flex gap-2 min-w-0">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-500" />
                 <Input placeholder="Search by name or category..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 rounded-xl" />
               </div>
               <Button type="submit" variant="outline" className="rounded-xl shrink-0">Search</Button>
@@ -113,8 +113,8 @@ export default function PartsPage() {
           {loading ? (
             <LoadingSpinner className="py-24" label="Loading parts..." />
           ) : displayList.length === 0 ? (
-            <div className="text-center py-20 bg-zinc-50 rounded-2xl border border-zinc-200">
-              <p className="text-zinc-600 text-lg font-medium">No parts found</p>
+            <div className="text-center py-20 bg-zinc-50 rounded-2xl border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800">
+              <p className="text-zinc-600 text-lg font-medium dark:text-zinc-400">No parts found</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
