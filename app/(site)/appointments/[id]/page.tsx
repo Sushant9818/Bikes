@@ -12,7 +12,7 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import Footer from '@/components/Footer'
 
 function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status] ?? { label: status, color: 'bg-zinc-100 text-zinc-600' }
+  const cfg = STATUS_CONFIG[status] ?? { label: status, color: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400' }
   return <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${cfg.color}`}>{cfg.label}</span>
 }
 
@@ -71,38 +71,38 @@ export default function AppointmentDetailPage() {
     <>
       <div className="py-10 px-4 sm:px-6 lg:px-8 min-h-[70vh]">
         <div className="max-w-3xl mx-auto">
-          <button onClick={() => router.back()} className="text-zinc-500 text-sm mb-6">← Back</button>
+          <button onClick={() => router.back()} className="text-zinc-500 text-sm mb-6 dark:text-zinc-400">← Back</button>
           <div className="flex items-start justify-between gap-4 mb-6">
-            <h1 className="text-2xl font-bold text-zinc-900">Appointment #{appt.id}</h1>
+            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Appointment #{appt.id}</h1>
             <StatusBadge status={appt.status} />
           </div>
 
-          <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 mb-5">
-            <h2 className="font-semibold text-zinc-900 mb-4">Bike Details</h2>
-            <p className="text-sm text-zinc-700">Model: {appt.bikeModel}</p>
-            {appt.bikeYear && <p className="text-sm text-zinc-700">Year: {appt.bikeYear}</p>}
+          <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 mb-5 dark:bg-zinc-900 dark:border-zinc-800">
+            <h2 className="font-semibold text-zinc-900 mb-4 dark:text-zinc-100">Bike Details</h2>
+            <p className="text-sm text-zinc-700 dark:text-zinc-300">Model: {appt.bikeModel}</p>
+            {appt.bikeYear && <p className="text-sm text-zinc-700 dark:text-zinc-300">Year: {appt.bikeYear}</p>}
           </div>
 
-          <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 mb-5">
-            <h2 className="font-semibold text-zinc-900 mb-4">Services Requested</h2>
+          <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 mb-5 dark:bg-zinc-900 dark:border-zinc-800">
+            <h2 className="font-semibold text-zinc-900 mb-4 dark:text-zinc-100">Services Requested</h2>
             <div className="flex flex-wrap gap-2">
               {appt.services.map((s) => <span key={s} className="bg-[#E60012]/10 text-[#E60012] text-sm font-medium px-3 py-1 rounded-full">{getServiceLabel(s)}</span>)}
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 mb-5">
-            <h2 className="font-semibold text-zinc-900 mb-4">Schedule</h2>
-            <p className="text-sm text-zinc-700">Date: {appt.preferredDate.toString().slice(0, 10)}</p>
-            <p className="text-sm text-zinc-700">Time: {appt.preferredTime}</p>
+          <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 mb-5 dark:bg-zinc-900 dark:border-zinc-800">
+            <h2 className="font-semibold text-zinc-900 mb-4 dark:text-zinc-100">Schedule</h2>
+            <p className="text-sm text-zinc-700 dark:text-zinc-300">Date: {appt.preferredDate.toString().slice(0, 10)}</p>
+            <p className="text-sm text-zinc-700 dark:text-zinc-300">Time: {appt.preferredTime}</p>
           </div>
 
           {isAdmin && (
-            <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 mb-5">
-              <h2 className="font-semibold text-zinc-900 mb-5">Update Appointment (Admin)</h2>
+            <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 mb-5 dark:bg-zinc-900 dark:border-zinc-800">
+              <h2 className="font-semibold text-zinc-900 mb-5 dark:text-zinc-100">Update Appointment (Admin)</h2>
               <form onSubmit={handleStatusUpdate} className="space-y-4">
                 <div>
                   <Label>Status</Label>
-                  <select value={statusForm.status} onChange={(e) => setStatusForm((p) => ({ ...p, status: e.target.value }))} className="w-full mt-1 h-10 px-3 border border-zinc-200 rounded-xl text-sm bg-white">
+                  <select value={statusForm.status} onChange={(e) => setStatusForm((p) => ({ ...p, status: e.target.value }))} className="w-full mt-1 h-10 px-3 border border-zinc-200 rounded-xl text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100">
                     {STATUSES.map((s) => <option key={s} value={s}>{STATUS_CONFIG[s]?.label ?? s}</option>)}
                   </select>
                 </div>
@@ -111,8 +111,8 @@ export default function AppointmentDetailPage() {
                   <div><Label>Estimated Cost (Rs)</Label><Input type="number" value={statusForm.estimatedCost} onChange={(e) => setStatusForm((p) => ({ ...p, estimatedCost: e.target.value }))} className="mt-1 rounded-xl" /></div>
                   <div><Label>Final Cost (Rs)</Label><Input type="number" value={statusForm.finalCost} onChange={(e) => setStatusForm((p) => ({ ...p, finalCost: e.target.value }))} className="mt-1 rounded-xl" /></div>
                 </div>
-                <div><Label>Service Notes</Label><textarea value={statusForm.serviceNotes} onChange={(e) => setStatusForm((p) => ({ ...p, serviceNotes: e.target.value }))} rows={3} className="w-full mt-1 px-3 py-2 border border-zinc-200 rounded-xl text-sm resize-y" /></div>
-                <div><Label>Repair Notes</Label><textarea value={statusForm.repairNotes} onChange={(e) => setStatusForm((p) => ({ ...p, repairNotes: e.target.value }))} rows={3} className="w-full mt-1 px-3 py-2 border border-zinc-200 rounded-xl text-sm resize-y" /></div>
+                <div><Label>Service Notes</Label><textarea value={statusForm.serviceNotes} onChange={(e) => setStatusForm((p) => ({ ...p, serviceNotes: e.target.value }))} rows={3} className="w-full mt-1 px-3 py-2 border border-zinc-200 rounded-xl text-sm resize-y dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100" /></div>
+                <div><Label>Repair Notes</Label><textarea value={statusForm.repairNotes} onChange={(e) => setStatusForm((p) => ({ ...p, repairNotes: e.target.value }))} rows={3} className="w-full mt-1 px-3 py-2 border border-zinc-200 rounded-xl text-sm resize-y dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100" /></div>
                 <Button type="submit" disabled={saving} className="bg-[#E60012] hover:bg-[#C5000F] rounded-xl">{saving ? 'Saving...' : 'Save Changes'}</Button>
               </form>
             </div>

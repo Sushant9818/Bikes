@@ -27,20 +27,20 @@ export default function ProfilePage() {
     <>
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-3xl font-bold text-zinc-900 mb-8">Profile</h1>
+          <h1 className="text-3xl font-bold text-zinc-900 mb-8 dark:text-zinc-100">Profile</h1>
 
           {me && (
-            <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm mb-6">
-              <h2 className="text-lg font-semibold text-zinc-900 mb-4">Account Information</h2>
+            <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm mb-6 dark:bg-zinc-900 dark:border-zinc-800">
+              <h2 className="text-lg font-semibold text-zinc-900 mb-4 dark:text-zinc-100">Account Information</h2>
               <div className="flex flex-wrap gap-2 items-center">
-                <p className="text-sm text-zinc-600 w-full">Phone: {me.phoneNumber || '-'}</p>
+                <p className="text-sm text-zinc-600 w-full dark:text-zinc-400">Phone: {me.phoneNumber || '-'}</p>
                 <Badge variant="secondary">{me.role}</Badge>
-                <span className="text-xs text-zinc-400">Joined {new Date(me.createdAt).toLocaleDateString()}</span>
+                <span className="text-xs text-zinc-400 dark:text-zinc-500">Joined {new Date(me.createdAt).toLocaleDateString()}</span>
               </div>
             </div>
           )}
 
-          <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden dark:bg-zinc-900 dark:border-zinc-800">
             <UserProfile
               routing="hash"
               appearance={{ elements: { rootBox: 'w-full', card: 'shadow-none border-0' } }}

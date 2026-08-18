@@ -35,22 +35,22 @@ export default function MyOrdersPage() {
     <>
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-zinc-900 mb-8">My Orders</h1>
+          <h1 className="text-3xl font-bold text-zinc-900 mb-8 dark:text-zinc-100">My Orders</h1>
           {orders.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-zinc-200 p-12 text-center"><p className="text-zinc-600 text-lg">You have no orders yet.</p></div>
+            <div className="bg-white rounded-2xl border border-zinc-200 p-12 text-center dark:bg-zinc-900 dark:border-zinc-800"><p className="text-zinc-600 text-lg dark:text-zinc-400">You have no orders yet.</p></div>
           ) : (
             <div className="space-y-4">
               {orders.map((order) => (
-                <div key={order.id} className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedOrder(order)}>
+                <div key={order.id} className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer dark:bg-zinc-900 dark:border-zinc-800" onClick={() => setSelectedOrder(order)}>
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
-                      <p className="font-semibold text-zinc-900">Order #{order.id}</p>
-                      <p className="text-sm text-zinc-500">{new Date(order.createdAt).toLocaleDateString()}</p>
+                      <p className="font-semibold text-zinc-900 dark:text-zinc-100">Order #{order.id}</p>
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400">{new Date(order.createdAt).toLocaleDateString()}</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <Badge variant={order.status === 'PAID' ? 'default' : order.status === 'PENDING' ? 'secondary' : 'destructive'}>{order.status}</Badge>
                       <p className="font-bold text-[#E60012]">{formatNPR(order.totalAmount)}</p>
-                      <p className="text-sm text-zinc-500">{order.items.length} item(s)</p>
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400">{order.items.length} item(s)</p>
                     </div>
                   </div>
                 </div>
@@ -67,7 +67,7 @@ export default function MyOrdersPage() {
             <div className="space-y-4">
               <p><strong>Status:</strong> {selectedOrder.status}</p>
               <p><strong>Total:</strong> {formatNPR(selectedOrder.totalAmount)}</p>
-              <ul className="divide-y divide-zinc-200">
+              <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {selectedOrder.items.map((item) => (
                   <li key={item.id} className="py-2 flex justify-between">
                     <span>{item.partName} x {item.quantity}</span>
