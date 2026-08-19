@@ -5,6 +5,7 @@ import Footer from '@/components/Footer'
 import { Button } from '@/components/ui/button'
 import { formatNPR } from '@/lib/currency'
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { useTheme } from '@/components/ThemeProvider'
 
 interface AnalyticsSummary {
   totalRevenue: number
@@ -21,6 +22,9 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [range, setRange] = useState(30)
+  const { theme } = useTheme()
+  const gridColor = theme === 'dark' ? '#3f3f46' : '#e4e4e7'
+  const axisColor = theme === 'dark' ? '#a1a1aa' : '#71717a'
 
   useEffect(() => {
     setLoading(true)
@@ -37,7 +41,7 @@ export default function AnalyticsPage() {
   if (loading && !data) {
     return (
       <>
-        <div className="py-12 px-4 sm:px-6 lg:px-8"><div className="max-w-7xl mx-auto animate-pulse space-y-6"><div className="h-10 bg-zinc-200 rounded w-48" /><div className="h-80 bg-zinc-200 rounded-2xl" /></div></div>
+        <div className="py-12 px-4 sm:px-6 lg:px-8"><div className="max-w-7xl mx-auto animate-pulse space-y-6"><div className="h-10 bg-zinc-200 rounded w-48 dark:bg-zinc-700" /><div className="h-80 bg-zinc-200 rounded-2xl dark:bg-zinc-700" /></div></div>
         <Footer />
       </>
     )
@@ -48,7 +52,7 @@ export default function AnalyticsPage() {
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-            <h1 className="text-3xl font-bold text-zinc-900">Sales Analytics</h1>
+            <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Sales Analytics</h1>
             <div className="flex gap-2">
               {RANGE_OPTIONS.map((opt) => (
                 <Button key={opt.days} variant={range === opt.days ? 'default' : 'outline'} size="sm" className={range === opt.days ? 'bg-[#E60012] hover:bg-[#C5000F]' : ''} onClick={() => setRange(opt.days)}>{opt.label}</Button>
@@ -59,17 +63,17 @@ export default function AnalyticsPage() {
           {data && (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-                <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm"><p className="text-sm text-zinc-600 mb-1">Total Revenue</p><p className="text-2xl font-bold text-[#E60012]">{formatNPR(data.totalRevenue)}</p></div>
-                <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm"><p className="text-sm text-zinc-600 mb-1">Total Orders</p><p className="text-2xl font-bold text-zinc-900">{data.totalOrders}</p></div>
-                <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm"><p className="text-sm text-zinc-600 mb-1">Avg Order Value</p><p className="text-2xl font-bold text-zinc-900">{formatNPR(data.avgOrderValue)}</p></div>
+                <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm dark:bg-zinc-900 dark:border-zinc-800"><p className="text-sm text-zinc-600 mb-1 dark:text-zinc-400">Total Revenue</p><p className="text-2xl font-bold text-[#E60012]">{formatNPR(data.totalRevenue)}</p></div>
+                <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm dark:bg-zinc-900 dark:border-zinc-800"><p className="text-sm text-zinc-600 mb-1 dark:text-zinc-400">Total Orders</p><p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{data.totalOrders}</p></div>
+                <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm dark:bg-zinc-900 dark:border-zinc-800"><p className="text-sm text-zinc-600 mb-1 dark:text-zinc-400">Avg Order Value</p><p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{formatNPR(data.avgOrderValue)}</p></div>
               </div>
 
               {data.ordersByDay.length > 0 && (
-                <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm mb-8">
-                  <h3 className="font-semibold text-zinc-900 mb-4">Revenue by Day</h3>
+                <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm mb-8 dark:bg-zinc-900 dark:border-zinc-800">
+                  <h3 className="font-semibold text-zinc-900 mb-4 dark:text-zinc-100">Revenue by Day</h3>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={data.ordersByDay}>
-                      <CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="date" /><YAxis /><Tooltip /><Legend />
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} /><XAxis dataKey="date" stroke={axisColor} /><YAxis stroke={axisColor} /><Tooltip contentStyle={{ backgroundColor: theme === 'dark' ? '#18181b' : '#ffffff', border: theme === 'dark' ? '1px solid #3f3f46' : '1px solid #e4e4e7', color: theme === 'dark' ? '#f4f4f5' : '#18181b' }} /><Legend />
                       <Line type="monotone" dataKey="revenue" stroke="#E60012" strokeWidth={2} name="Revenue" />
                     </LineChart>
                   </ResponsiveContainer>
@@ -77,21 +81,21 @@ export default function AnalyticsPage() {
               )}
 
               {data.topParts.length > 0 && (
-                <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm mb-8">
-                  <h3 className="font-semibold text-zinc-900 mb-4">Top Selling Parts</h3>
+                <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm mb-8 dark:bg-zinc-900 dark:border-zinc-800">
+                  <h3 className="font-semibold text-zinc-900 mb-4 dark:text-zinc-100">Top Selling Parts</h3>
                   <table className="w-full text-sm">
-                    <thead><tr className="border-b border-zinc-200"><th className="text-left py-3 px-2 font-semibold text-zinc-600">Part</th><th className="text-right py-3 px-2 font-semibold text-zinc-600">Qty Sold</th><th className="text-right py-3 px-2 font-semibold text-zinc-600">Revenue</th></tr></thead>
-                    <tbody>{data.topParts.map((p, i) => <tr key={i} className="border-b border-zinc-100"><td className="py-3 px-2">{p.partName}</td><td className="py-3 px-2 text-right">{p.qtySold}</td><td className="py-3 px-2 text-right font-semibold">{formatNPR(p.revenue)}</td></tr>)}</tbody>
+                    <thead><tr className="border-b border-zinc-200 dark:border-zinc-800"><th className="text-left py-3 px-2 font-semibold text-zinc-600 dark:text-zinc-400">Part</th><th className="text-right py-3 px-2 font-semibold text-zinc-600 dark:text-zinc-400">Qty Sold</th><th className="text-right py-3 px-2 font-semibold text-zinc-600 dark:text-zinc-400">Revenue</th></tr></thead>
+                    <tbody>{data.topParts.map((p, i) => <tr key={i} className="border-b border-zinc-100 dark:border-zinc-800"><td className="py-3 px-2 dark:text-zinc-100">{p.partName}</td><td className="py-3 px-2 text-right dark:text-zinc-100">{p.qtySold}</td><td className="py-3 px-2 text-right font-semibold dark:text-zinc-100">{formatNPR(p.revenue)}</td></tr>)}</tbody>
                   </table>
                 </div>
               )}
 
               {data.lowStockParts.length > 0 && (
-                <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
-                  <h3 className="font-semibold text-zinc-900 mb-4">Low Stock Parts</h3>
+                <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
+                  <h3 className="font-semibold text-zinc-900 mb-4 dark:text-zinc-100">Low Stock Parts</h3>
                   <table className="w-full text-sm">
-                    <thead><tr className="border-b border-zinc-200"><th className="text-left py-3 px-2 font-semibold text-zinc-600">Part</th><th className="text-right py-3 px-2 font-semibold text-zinc-600">Quantity</th></tr></thead>
-                    <tbody>{data.lowStockParts.map((p, i) => <tr key={i} className="border-b border-zinc-100"><td className="py-3 px-2">{p.partName}</td><td className="py-3 px-2 text-right"><span className={p.quantity <= 5 ? 'text-red-600 font-semibold' : ''}>{p.quantity}</span></td></tr>)}</tbody>
+                    <thead><tr className="border-b border-zinc-200 dark:border-zinc-800"><th className="text-left py-3 px-2 font-semibold text-zinc-600 dark:text-zinc-400">Part</th><th className="text-right py-3 px-2 font-semibold text-zinc-600 dark:text-zinc-400">Quantity</th></tr></thead>
+                    <tbody>{data.lowStockParts.map((p, i) => <tr key={i} className="border-b border-zinc-100 dark:border-zinc-800"><td className="py-3 px-2 dark:text-zinc-100">{p.partName}</td><td className="py-3 px-2 text-right"><span className={p.quantity <= 5 ? 'text-red-600 font-semibold' : 'dark:text-zinc-100'}>{p.quantity}</span></td></tr>)}</tbody>
                   </table>
                 </div>
               )}
