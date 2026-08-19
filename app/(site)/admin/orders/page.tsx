@@ -50,7 +50,7 @@ export default function AdminOrdersPage() {
     <>
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-zinc-900 mb-8">Orders</h1>
+          <h1 className="text-3xl font-bold text-zinc-900 mb-8 dark:text-zinc-100">Orders</h1>
           <DataTable columns={COLUMNS} data={orders} loading={loading} emptyMessage="No orders found." showActions isAdmin onEdit={(row) => setSelectedOrder(row)} />
         </div>
       </div>
@@ -61,15 +61,15 @@ export default function AdminOrdersPage() {
             <DialogHeader><DialogTitle>Order #{selectedOrder.id}</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div className="space-y-1 text-sm">
-                <p><span className="text-zinc-600">Name:</span> {selectedOrder.customerName}</p>
-                <p><span className="text-zinc-600">Phone:</span> {selectedOrder.phone}</p>
-                {selectedOrder.email && <p><span className="text-zinc-600">Email:</span> {selectedOrder.email}</p>}
-                <p><span className="text-zinc-600">Address:</span> {selectedOrder.address}</p>
+                <p><span className="text-zinc-600 dark:text-zinc-400">Name:</span> {selectedOrder.customerName}</p>
+                <p><span className="text-zinc-600 dark:text-zinc-400">Phone:</span> {selectedOrder.phone}</p>
+                {selectedOrder.email && <p><span className="text-zinc-600 dark:text-zinc-400">Email:</span> {selectedOrder.email}</p>}
+                <p><span className="text-zinc-600 dark:text-zinc-400">Address:</span> {selectedOrder.address}</p>
               </div>
-              <div className="border border-zinc-200 rounded-xl overflow-hidden">
+              <div className="border border-zinc-200 rounded-xl overflow-hidden dark:border-zinc-800">
                 <table className="w-full">
-                  <thead className="bg-zinc-50"><tr><th className="px-4 py-2 text-left text-sm font-semibold text-zinc-600">Part</th><th className="px-4 py-2 text-right text-sm font-semibold text-zinc-600">Price</th><th className="px-4 py-2 text-center text-sm font-semibold text-zinc-600">Qty</th><th className="px-4 py-2 text-right text-sm font-semibold text-zinc-600">Total</th></tr></thead>
-                  <tbody className="divide-y divide-zinc-200">
+                  <thead className="bg-zinc-50 dark:bg-zinc-800"><tr><th className="px-4 py-2 text-left text-sm font-semibold text-zinc-600 dark:text-zinc-400">Part</th><th className="px-4 py-2 text-right text-sm font-semibold text-zinc-600 dark:text-zinc-400">Price</th><th className="px-4 py-2 text-center text-sm font-semibold text-zinc-600 dark:text-zinc-400">Qty</th><th className="px-4 py-2 text-right text-sm font-semibold text-zinc-600 dark:text-zinc-400">Total</th></tr></thead>
+                  <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                     {selectedOrder.items.map((item) => (
                       <tr key={item.id}>
                         <td className="px-4 py-3 text-sm">{item.partName}</td>
@@ -81,18 +81,18 @@ export default function AdminOrdersPage() {
                   </tbody>
                 </table>
               </div>
-              <div className="flex items-center justify-between pt-4 border-t border-zinc-200">
+              <div className="flex items-center justify-between pt-4 border-t border-zinc-200 dark:border-zinc-800">
                 <div>
-                  <p className="text-sm text-zinc-600">Status</p>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">Status</p>
                   <select
                     value={selectedOrder.status}
                     onChange={(e) => { handleStatusChange(selectedOrder.id, e.target.value); setSelectedOrder({ ...selectedOrder, status: e.target.value as Order['status'] }) }}
-                    className="mt-1 h-10 px-3 border border-zinc-200 rounded-xl text-sm font-semibold"
+                    className="mt-1 h-10 px-3 border border-zinc-200 rounded-xl text-sm font-semibold dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
                   >
                     {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
-                <div className="text-right"><p className="text-sm text-zinc-600">Total</p><p className="text-2xl font-bold text-[#E60012]">{formatNPR(selectedOrder.totalAmount)}</p></div>
+                <div className="text-right"><p className="text-sm text-zinc-600 dark:text-zinc-400">Total</p><p className="text-2xl font-bold text-[#E60012]">{formatNPR(selectedOrder.totalAmount)}</p></div>
               </div>
             </div>
           </DialogContent>
