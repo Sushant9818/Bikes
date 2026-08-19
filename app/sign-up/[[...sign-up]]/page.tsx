@@ -19,14 +19,14 @@ function errorMessage(err: unknown, fallback: string): string {
 
 function CardShell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4">
+    <div className="min-h-screen bg-white flex items-center justify-center px-4 dark:bg-zinc-950">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl border border-zinc-200 p-8 shadow-lg">
+        <div className="bg-white rounded-2xl border border-zinc-200 p-8 shadow-lg dark:bg-zinc-900 dark:border-zinc-800">
           <div className="flex items-center justify-center gap-3 mb-8">
             <div className="w-12 h-12 bg-[#E60012] rounded-xl flex items-center justify-center">
               <Bike className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-zinc-900">{title}</h1>
+            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{title}</h1>
           </div>
           {children}
         </div>
@@ -104,7 +104,7 @@ export default function SignUpPage() {
   if (pendingVerification) {
     return (
       <CardShell title="Verify Email">
-        <p className="text-center text-zinc-600 text-sm mb-6">
+        <p className="text-center text-zinc-600 text-sm mb-6 dark:text-zinc-400">
           We sent a verification code to <span className="font-medium">{email}</span>. Enter it below.
         </p>
         <form onSubmit={onVerify} className="space-y-6">
@@ -207,7 +207,7 @@ export default function SignUpPage() {
           {loading ? 'Registering...' : 'Register'}
         </Button>
       </form>
-      <p className="text-center text-zinc-600 text-sm mt-6">
+      <p className="text-center text-zinc-600 text-sm mt-6 dark:text-zinc-400">
         Already have an account?{' '}
         <Link href="/sign-in" className="font-semibold text-[#E60012] hover:underline">
           Login
