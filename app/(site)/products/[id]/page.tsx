@@ -26,7 +26,7 @@ export default function ProductDetailPage() {
   }, [id])
 
   if (loading) return <LoadingSpinner className="min-h-[60vh]" label="Loading..." />
-  if (!vehicle) return <div className="py-24 text-center text-zinc-500">Vehicle not found.</div>
+  if (!vehicle) return <div className="py-24 text-center text-zinc-500 dark:text-zinc-400">Vehicle not found.</div>
 
   const typeLabel = vehicleTypeLabel(vehicle.type)
   const isLowStock = (vehicle.quantity ?? 0) <= 5
@@ -34,21 +34,21 @@ export default function ProductDetailPage() {
   return (
     <>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <Button variant="ghost" onClick={() => router.back()} className="text-zinc-500 -ml-2 mb-4">← Back</Button>
+        <Button variant="ghost" onClick={() => router.back()} className="text-zinc-500 -ml-2 mb-4 dark:text-zinc-400">← Back</Button>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-          <div className="bg-gradient-to-br from-zinc-50 to-zinc-100 rounded-2xl overflow-hidden flex items-center justify-center p-6 min-h-[320px]">
+          <div className="bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-800 rounded-2xl overflow-hidden flex items-center justify-center p-6 min-h-[320px]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={getImageUrl(vehicle)} alt={vehicle.modelName} className="w-full max-h-[380px] object-contain drop-shadow-xl" />
           </div>
           <div>
             <Badge className="mb-3 bg-[#E60012]/10 text-[#E60012] border-0 text-xs uppercase">Suzuki {typeLabel}</Badge>
-            <h1 className="text-4xl font-bold text-zinc-900 mb-1">{vehicle.modelName}</h1>
-            <p className="text-zinc-400 text-sm mb-5">Suzuki{vehicle.year ? ` · ${vehicle.year}` : ''}</p>
+            <h1 className="text-4xl font-bold text-zinc-900 mb-1 dark:text-zinc-100">{vehicle.modelName}</h1>
+            <p className="text-zinc-400 text-sm mb-5 dark:text-zinc-500">Suzuki{vehicle.year ? ` · ${vehicle.year}` : ''}</p>
             <p className="text-4xl font-extrabold text-[#E60012] mb-6">{formatNPR(vehicle.price)}</p>
             <span className={`inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-full mb-6 ${isLowStock ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-700'}`}>
               {isLowStock ? `Only ${vehicle.quantity} left` : `${vehicle.quantity} in stock`}
             </span>
-            <p className="text-zinc-600 mb-8">{vehicleDescription(vehicle)}</p>
+            <p className="text-zinc-600 mb-8 dark:text-zinc-400">{vehicleDescription(vehicle)}</p>
             <div className="flex flex-wrap gap-3">
               <Button asChild className="bg-[#E60012] hover:bg-[#C5000F] rounded-xl px-6"><Link href="/test-drive">Book Test Drive</Link></Button>
               <Button asChild variant="outline" className="rounded-xl px-6"><Link href="/contact">Enquire Now</Link></Button>
