@@ -5,7 +5,7 @@ export default function SkeletonGrid({ cols = 4, rows = 1 }: { cols?: number; ro
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-sm">
+        <div key={i} className="bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
           <Skeleton className="h-48 w-full rounded-none" />
           <div className="p-5 space-y-3">
             <Skeleton className="h-5 w-3/4" />
