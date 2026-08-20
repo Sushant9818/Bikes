@@ -73,7 +73,7 @@ export default function AnalyticsPage() {
                   <h3 className="font-semibold text-zinc-900 mb-4 dark:text-zinc-100">Revenue by Day</h3>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={data.ordersByDay}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} /><XAxis dataKey="date" stroke={axisColor} /><YAxis stroke={axisColor} /><Tooltip contentStyle={{ backgroundColor: theme === 'dark' ? '#18181b' : '#ffffff', border: theme === 'dark' ? '1px solid #3f3f46' : '1px solid #e4e4e7', color: theme === 'dark' ? '#f4f4f5' : '#18181b' }} /><Legend />
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} /><XAxis dataKey="date" stroke={axisColor} /><YAxis stroke={axisColor} /><Tooltip contentStyle={{ backgroundColor: theme === 'dark' ? '#18181b' : '#ffffff', border: theme === 'dark' ? '1px solid #3f3f46' : '1px solid #e4e4e7', color: theme === 'dark' ? '#f4f4f5' : '#18181b' }} /><Legend wrapperStyle={{ color: axisColor }} />
                       <Line type="monotone" dataKey="revenue" stroke="#E60012" strokeWidth={2} name="Revenue" />
                     </LineChart>
                   </ResponsiveContainer>
