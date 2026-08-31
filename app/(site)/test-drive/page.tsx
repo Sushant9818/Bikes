@@ -36,15 +36,15 @@ export default function TestDrivePage() {
     <>
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-3xl font-bold text-zinc-900 mb-2">Book a Test Drive</h1>
-          <p className="text-zinc-600 mb-8">Experience the thrill of riding a Suzuki motorcycle or scooter.</p>
+          <h1 className="text-3xl font-bold text-zinc-900 mb-2 dark:text-zinc-100">Book a Test Drive</h1>
+          <p className="text-zinc-600 mb-8 dark:text-zinc-400">Experience the thrill of riding a Suzuki motorcycle or scooter.</p>
 
           {sent ? (
-            <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm text-center">
-              <p className="text-zinc-700 font-medium">Test drive booking request submitted! We will contact you soon.</p>
+            <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm text-center dark:bg-zinc-900 dark:border-zinc-800">
+              <p className="text-zinc-700 font-medium dark:text-zinc-300">Test drive booking request submitted! We will contact you soon.</p>
             </div>
           ) : (
-            <form onSubmit={onSubmit} className="space-y-6 bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
+            <form onSubmit={onSubmit} className="space-y-6 bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
               {error && <p className="text-red-600 text-sm">{error}</p>}
               <div><Label htmlFor="name">Full Name *</Label><Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="mt-1" /></div>
               <div><Label htmlFor="phone">Phone Number *</Label><Input id="phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required className="mt-1" /></div>

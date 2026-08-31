@@ -14,7 +14,7 @@ import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog'
 import { Plus, Wrench, CalendarDays, Clock, Eye, XCircle, RefreshCw, X } from 'lucide-react'
 
 function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status] ?? { label: status, color: 'bg-zinc-100 text-zinc-600' }
+  const cfg = STATUS_CONFIG[status] ?? { label: status, color: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400' }
   return <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${cfg.color}`}>{cfg.label}</span>
 }
 
@@ -40,17 +40,17 @@ function RescheduleModal({ appt, onClose, onSuccess }: { appt: AppointmentDto; o
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between p-5 border-b border-zinc-200">
-          <h2 className="font-bold text-zinc-900 text-lg">Reschedule Appointment</h2>
-          <button onClick={onClose} className="p-1.5 rounded-xl text-zinc-400 hover:bg-zinc-100"><X className="w-5 h-5" /></button>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md dark:bg-zinc-900">
+        <div className="flex items-center justify-between p-5 border-b border-zinc-200 dark:border-zinc-800">
+          <h2 className="font-bold text-zinc-900 text-lg dark:text-zinc-100">Reschedule Appointment</h2>
+          <button onClick={onClose} className="p-1.5 rounded-xl text-zinc-400 hover:bg-zinc-100 dark:text-zinc-500 dark:hover:bg-zinc-800"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {error && <p className="text-red-600 text-sm">{error}</p>}
           <div><Label htmlFor="rs-date">New Date</Label><Input id="rs-date" type="date" min={today} value={date} onChange={(e) => setDate(e.target.value)} className="mt-1 rounded-xl" required /></div>
           <div>
             <Label htmlFor="rs-time">New Time Slot</Label>
-            <select id="rs-time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full mt-1 h-10 px-3 border border-zinc-200 rounded-xl text-sm bg-white" required>
+            <select id="rs-time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full mt-1 h-10 px-3 border border-zinc-200 rounded-xl text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100" required>
               <option value="">Select a time slot</option>
               {TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
@@ -100,29 +100,29 @@ export default function MyAppointmentsPage() {
       <div className="py-10 px-4 sm:px-6 lg:px-8 min-h-[70vh]">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-8">
-            <h1 className="text-2xl font-bold text-zinc-900">My Service Appointments</h1>
+            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">My Service Appointments</h1>
             <Button onClick={() => router.push('/book-service')} className="bg-[#E60012] hover:bg-[#C5000F] rounded-xl"><Plus className="w-4 h-4 mr-2" /> Book Service</Button>
           </div>
 
           {loading ? (
             <LoadingSpinner className="py-24" label="Loading appointments..." />
           ) : appointments.length === 0 ? (
-            <div className="text-center py-24 bg-zinc-50 rounded-2xl border border-zinc-200">
-              <Wrench className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
-              <p className="text-zinc-600 font-medium">No appointments yet</p>
+            <div className="text-center py-24 bg-zinc-50 rounded-2xl border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800">
+              <Wrench className="w-10 h-10 text-zinc-300 mx-auto mb-3 dark:text-zinc-600" />
+              <p className="text-zinc-600 font-medium dark:text-zinc-400">No appointments yet</p>
             </div>
           ) : (
             <div className="space-y-4">
               {appointments.map((appt) => (
-                <div key={appt.id} className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-5">
+                <div key={appt.id} className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-5 dark:bg-zinc-900 dark:border-zinc-800">
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2"><StatusBadge status={appt.status} /><span className="text-xs text-zinc-400">#{appt.id}</span></div>
-                      <h3 className="font-bold text-zinc-900 text-lg">{appt.bikeModel}</h3>
+                      <div className="flex items-center gap-3 mb-2"><StatusBadge status={appt.status} /><span className="text-xs text-zinc-400 dark:text-zinc-500">#{appt.id}</span></div>
+                      <h3 className="font-bold text-zinc-900 text-lg dark:text-zinc-100">{appt.bikeModel}</h3>
                       <div className="flex flex-wrap gap-1.5 mt-2">
-                        {appt.services.slice(0, 3).map((s) => <span key={s} className="text-xs bg-zinc-100 text-zinc-700 px-2 py-0.5 rounded-full">{getServiceLabel(s)}</span>)}
+                        {appt.services.slice(0, 3).map((s) => <span key={s} className="text-xs bg-zinc-100 text-zinc-700 px-2 py-0.5 rounded-full dark:bg-zinc-800 dark:text-zinc-300">{getServiceLabel(s)}</span>)}
                       </div>
-                      <div className="flex items-center gap-4 mt-3 text-sm text-zinc-500">
+                      <div className="flex items-center gap-4 mt-3 text-sm text-zinc-500 dark:text-zinc-400">
                         <span className="flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5" /> {appt.preferredDate.toString().slice(0, 10)}</span>
                         <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {appt.preferredTime}</span>
                       </div>

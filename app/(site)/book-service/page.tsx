@@ -63,12 +63,12 @@ export default function BookServicePage() {
     <>
       <div className="py-10 px-4 sm:px-6 lg:px-8 min-h-[70vh]">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-2xl font-bold text-zinc-900 mb-8">Book a Service Appointment</h1>
+          <h1 className="text-2xl font-bold text-zinc-900 mb-8 dark:text-zinc-100">Book a Service Appointment</h1>
           {error && <p className="text-[#E60012] text-sm mb-4">{error}</p>}
 
           <form onSubmit={onSubmit} className="space-y-8">
-            <section className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
-              <h2 className="text-base font-semibold text-zinc-900 mb-5">Bike Information</h2>
+            <section className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
+              <h2 className="text-base font-semibold text-zinc-900 mb-5 dark:text-zinc-100">Bike Information</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2"><Label>Bike Model *</Label><Input value={form.bikeModel} onChange={(e) => setForm({ ...form, bikeModel: e.target.value })} placeholder="e.g. Gixxer SF 250" className="mt-1 rounded-xl" required /></div>
                 <div><Label>Bike Year</Label><Input type="number" value={form.bikeYear} onChange={(e) => setForm({ ...form, bikeYear: e.target.value })} className="mt-1 rounded-xl" /></div>
@@ -78,8 +78,8 @@ export default function BookServicePage() {
               </div>
             </section>
 
-            <section className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
-              <h2 className="text-base font-semibold text-zinc-900 mb-2">Select Services *</h2>
+            <section className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
+              <h2 className="text-base font-semibold text-zinc-900 mb-2 dark:text-zinc-100">Select Services *</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {SERVICE_TYPES.map(({ value, label }) => {
                   const active = selectedServices.includes(value)
@@ -88,9 +88,9 @@ export default function BookServicePage() {
                       key={value}
                       type="button"
                       onClick={() => toggleService(value)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium text-left transition-all ${active ? 'border-[#E60012] bg-[#E60012]/5 text-[#E60012]' : 'border-zinc-200 text-zinc-700 hover:border-zinc-300'}`}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium text-left transition-all ${active ? 'border-[#E60012] bg-[#E60012]/5 text-[#E60012]' : 'border-zinc-200 text-zinc-700 hover:border-zinc-300 dark:border-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-600'}`}
                     >
-                      {active ? <CheckSquare className="w-4 h-4 shrink-0" /> : <Square className="w-4 h-4 shrink-0 text-zinc-400" />}
+                      {active ? <CheckSquare className="w-4 h-4 shrink-0" /> : <Square className="w-4 h-4 shrink-0 text-zinc-400 dark:text-zinc-500" />}
                       {label}
                     </button>
                   )
@@ -101,13 +101,13 @@ export default function BookServicePage() {
               )}
             </section>
 
-            <section className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
-              <h2 className="text-base font-semibold text-zinc-900 mb-5">Schedule</h2>
+            <section className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
+              <h2 className="text-base font-semibold text-zinc-900 mb-5 dark:text-zinc-100">Schedule</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div><Label>Preferred Date *</Label><Input type="date" min={today} value={form.preferredDate} onChange={(e) => setForm({ ...form, preferredDate: e.target.value })} className="mt-1 rounded-xl" required /></div>
                 <div>
                   <Label>Preferred Time *</Label>
-                  <select value={form.preferredTime} onChange={(e) => setForm({ ...form, preferredTime: e.target.value })} className="w-full mt-1 h-10 px-3 border border-zinc-200 rounded-xl text-sm bg-white" required>
+                  <select value={form.preferredTime} onChange={(e) => setForm({ ...form, preferredTime: e.target.value })} className="w-full mt-1 h-10 px-3 border border-zinc-200 rounded-xl text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100" required>
                     <option value="">Select a time slot</option>
                     {TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
@@ -115,9 +115,9 @@ export default function BookServicePage() {
               </div>
             </section>
 
-            <section className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
-              <h2 className="text-base font-semibold text-zinc-900 mb-4">Issue Description</h2>
-              <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-sm resize-y" />
+            <section className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
+              <h2 className="text-base font-semibold text-zinc-900 mb-4 dark:text-zinc-100">Issue Description</h2>
+              <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-sm resize-y dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100" />
             </section>
 
             <div className="flex gap-3">

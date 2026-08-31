@@ -102,8 +102,8 @@ export default function OffersPage() {
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-10">
             <div>
-              <h1 className="text-3xl font-bold text-zinc-900">Special Offers</h1>
-              <p className="text-zinc-500 text-sm mt-1">Exclusive deals and discounts from Suzuki Nepal</p>
+              <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Special Offers</h1>
+              <p className="text-zinc-500 text-sm mt-1 dark:text-zinc-400">Exclusive deals and discounts from Suzuki Nepal</p>
             </div>
             {isAdmin && (
               <Button onClick={openAdd} className="bg-[#E60012] hover:bg-[#C5000F] rounded-xl shadow-md">
@@ -115,20 +115,20 @@ export default function OffersPage() {
           {loading ? (
             <LoadingSpinner className="py-24" label="Loading offers..." />
           ) : offers.length === 0 ? (
-            <div className="text-center py-24 bg-zinc-50 rounded-2xl border border-zinc-200">
-              <Tag className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
-              <p className="text-zinc-500 font-medium">No offers available right now</p>
+            <div className="text-center py-24 bg-zinc-50 rounded-2xl border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800">
+              <Tag className="w-10 h-10 text-zinc-300 mx-auto mb-3 dark:text-zinc-600" />
+              <p className="text-zinc-500 font-medium dark:text-zinc-400">No offers available right now</p>
             </div>
           ) : (
             <div className="space-y-5">
               {offers.map((offer) => (
-                <div key={offer.id} className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
+                <div key={offer.id} className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden dark:bg-zinc-900 dark:border-zinc-800">
                   <div className="h-1 bg-[#E60012]" />
                   <div className="p-6 flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <Badge className="mb-3 bg-[#E60012] text-white">{offerBadgeLabel(offer)}</Badge>
-                      <h2 className="text-xl font-bold text-zinc-900 mb-2">{offer.title}</h2>
-                      {offer.description && <p className="text-zinc-600 text-sm leading-relaxed">{offer.description}</p>}
+                      <h2 className="text-xl font-bold text-zinc-900 mb-2 dark:text-zinc-100">{offer.title}</h2>
+                      {offer.description && <p className="text-zinc-600 text-sm leading-relaxed dark:text-zinc-400">{offer.description}</p>}
                     </div>
                     {isAdmin && (
                       <div className="flex gap-2 shrink-0">
@@ -146,7 +146,7 @@ export default function OffersPage() {
 
       <AddEditModal open={modalOpen} onOpenChange={setModalOpen} title={editing ? 'Edit Offer' : 'Add Offer'} onSubmit={onSubmit} loading={saving} submitLabel={editing ? 'Update' : 'Add'}>
         <div><Label>Title *</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="mt-1" required /></div>
-        <div><Label>Description</Label><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="w-full mt-1 px-3 py-2 border border-zinc-200 rounded-xl text-sm resize-y min-h-[80px]" /></div>
+        <div><Label>Description</Label><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="w-full mt-1 px-3 py-2 border border-zinc-200 rounded-xl text-sm resize-y min-h-[80px] dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100" /></div>
         <div><Label>Discount % (optional)</Label><Input type="number" value={form.discountPercent} onChange={(e) => setForm({ ...form, discountPercent: e.target.value })} className="mt-1" /></div>
         <div className="grid grid-cols-2 gap-3">
           <div><Label>Start Date</Label><Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="mt-1" /></div>

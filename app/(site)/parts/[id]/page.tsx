@@ -32,7 +32,7 @@ export default function PartDetailPage() {
   }, [id])
 
   if (loading) return <LoadingSpinner className="min-h-[60vh]" label="Loading..." />
-  if (!part) return <div className="py-24 text-center text-zinc-500">Part not found.</div>
+  if (!part) return <div className="py-24 text-center text-zinc-500 dark:text-zinc-400">Part not found.</div>
 
   const isLowStock = (part.quantity ?? 0) <= 5
 
@@ -41,15 +41,15 @@ export default function PartDetailPage() {
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           <Button variant="ghost" asChild className="mb-6"><Link href="/parts">← Back to Parts</Link></Button>
-          <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-sm flex flex-col md:flex-row">
-            <div className="md:w-1/2 aspect-[4/3] bg-zinc-100">
+          <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-sm flex flex-col md:flex-row dark:bg-zinc-900 dark:border-zinc-800">
+            <div className="md:w-1/2 aspect-[4/3] bg-zinc-100 dark:bg-zinc-800">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={getImageUrl(part)} alt={part.partName} className="w-full h-full object-cover" />
             </div>
             <div className="md:w-1/2 p-8">
               <Badge variant="secondary" className="mb-3">{part.type.replace('_', ' ')}</Badge>
-              <h1 className="text-3xl font-bold text-zinc-900 mb-2">{part.partName}</h1>
-              <p className="text-zinc-600 mb-4">{partDescription(part)}</p>
+              <h1 className="text-3xl font-bold text-zinc-900 mb-2 dark:text-zinc-100">{part.partName}</h1>
+              <p className="text-zinc-600 mb-4 dark:text-zinc-400">{partDescription(part)}</p>
               <p className="text-3xl font-bold text-[#E60012] mb-4">{formatNPR(part.price)}</p>
               <Badge variant={isLowStock ? 'destructive' : 'success'} className="mb-6">
                 Stock: {part.quantity ?? 0} {isLowStock && '(Low Stock)'}

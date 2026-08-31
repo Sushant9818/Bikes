@@ -42,14 +42,14 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4">
+    <div className="min-h-screen bg-white flex items-center justify-center px-4 dark:bg-zinc-950">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl border border-zinc-200 p-8 shadow-lg">
+        <div className="bg-white rounded-2xl border border-zinc-200 p-8 shadow-lg dark:bg-zinc-900 dark:border-zinc-800">
           <div className="flex items-center justify-center gap-3 mb-8">
             <div className="w-12 h-12 bg-[#E60012] rounded-xl flex items-center justify-center">
               <Bike className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-zinc-900">Login</h1>
+            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Login</h1>
           </div>
           <form onSubmit={onSubmit} className="space-y-6">
             <div>
@@ -87,7 +87,7 @@ export default function SignInPage() {
               {loading ? 'Logging in...' : 'Login'}
             </Button>
           </form>
-          <p className="text-center text-zinc-600 text-sm mt-6">
+          <p className="text-center text-zinc-600 text-sm mt-6 dark:text-zinc-400">
             Don&apos;t have an account?{' '}
             <Link href="/sign-up" className="font-semibold text-[#E60012] hover:underline">
               Register

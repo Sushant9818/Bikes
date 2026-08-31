@@ -20,13 +20,13 @@ export default function ProductCard({ vehicle, serialNumber, onEdit, onDelete }:
   const isAdminCard = Boolean(onEdit || onDelete)
 
   return (
-    <article className="group relative flex flex-col h-full bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-md hover:shadow-xl hover:border-[#E60012]/30 hover:-translate-y-1 transition-all duration-300">
+    <article className="group relative flex flex-col h-full bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-md hover:shadow-xl hover:border-[#E60012]/30 hover:-translate-y-1 transition-all duration-300 dark:bg-zinc-900 dark:border-zinc-800">
       {serialNumber != null && (
         <span className="absolute top-3 right-3 z-20 min-w-[2rem] text-center bg-[#E60012] text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-lg">
           #{serialNumber}
         </span>
       )}
-      <Link href={`/products/${vehicle.id}`} className="relative aspect-[4/3] bg-gradient-to-br from-zinc-100 to-zinc-200 overflow-hidden block">
+      <Link href={`/products/${vehicle.id}`} className="relative aspect-[4/3] bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-700 overflow-hidden block">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={imgSrc}
@@ -42,14 +42,14 @@ export default function ProductCard({ vehicle, serialNumber, onEdit, onDelete }:
           <Badge variant="secondary" className="text-xs shrink-0">Stock: {vehicle.quantity ?? 0}</Badge>
         </div>
         <Link href={`/products/${vehicle.id}`}>
-          <h3 className="font-bold text-lg text-zinc-900 leading-tight mt-0.5 mb-1 hover:text-[#E60012] transition-colors">{vehicle.modelName}</h3>
+          <h3 className="font-bold text-lg text-zinc-900 leading-tight mt-0.5 mb-1 hover:text-[#E60012] transition-colors dark:text-zinc-100">{vehicle.modelName}</h3>
         </Link>
-        <p className="text-sm text-zinc-500 line-clamp-2 mb-4 flex-1">{vehicleDescription(vehicle)}</p>
+        <p className="text-sm text-zinc-500 line-clamp-2 mb-4 flex-1 dark:text-zinc-400">{vehicleDescription(vehicle)}</p>
         <p className="font-bold text-xl text-[#E60012] mb-3">{formatNPR(vehicle.price)}</p>
         {isAdminCard ? (
           <div className="space-y-2 mt-auto">
             <AdminCardActions onEdit={onEdit ? () => onEdit(vehicle) : undefined} onDelete={onDelete ? () => onDelete(vehicle) : undefined} />
-            <Button asChild size="sm" variant="ghost" className="w-full rounded-xl text-zinc-600">
+            <Button asChild size="sm" variant="ghost" className="w-full rounded-xl text-zinc-600 dark:text-zinc-400">
               <Link href={`/products/${vehicle.id}`}>View details</Link>
             </Button>
           </div>

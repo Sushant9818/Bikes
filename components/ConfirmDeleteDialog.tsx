@@ -18,7 +18,7 @@ export default function ConfirmDeleteDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
-        <p className="text-zinc-600">
+        <p className="text-zinc-600 dark:text-zinc-400">
           {message || `This action cannot be undone. Are you sure you want to delete "${itemName}"?`}
         </p>
         <DialogFooter>

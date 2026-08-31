@@ -39,16 +39,16 @@ export default function AdminUsersPage() {
     if (res.ok) { const updated = await res.json(); setUsers((prev) => prev.map((u) => (u.id === id ? updated : u))) }
   }
 
-  if (loading) return <div className="py-24 text-center text-zinc-500">Loading...</div>
+  if (loading) return <div className="py-24 text-center text-zinc-500 dark:text-zinc-400">Loading...</div>
 
   return (
     <>
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-bold text-zinc-900 mb-8">User Management</h1>
+          <h1 className="text-3xl font-bold text-zinc-900 mb-8 dark:text-zinc-100">User Management</h1>
           <Input placeholder="Search by username or email..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm mb-6" />
 
-          <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-sm">
+          <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
             <Table>
               <TableHeader><TableRow><TableHead>Username</TableHead><TableHead>Email</TableHead><TableHead>Phone</TableHead><TableHead>Role</TableHead><TableHead>Enabled</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
               <TableBody>
@@ -58,7 +58,7 @@ export default function AdminUsersPage() {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.phoneNumber || '-'}</TableCell>
                     <TableCell>
-                      <select value={user.role} onChange={(e) => handleRoleChange(user.id, e.target.value)} className="h-9 px-3 border border-zinc-200 rounded-lg text-sm">
+                      <select value={user.role} onChange={(e) => handleRoleChange(user.id, e.target.value)} className="h-9 px-3 border border-zinc-200 rounded-lg text-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
                         <option value="ADMIN">ADMIN</option><option value="CLIENT">CLIENT</option>
                       </select>
                     </TableCell>

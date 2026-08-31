@@ -97,8 +97,8 @@ export default function VehicleCatalogPage({ type, heading, addLabel }: VehicleC
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-zinc-900">{heading}</h1>
-              <p className="text-zinc-600 text-sm mt-1">{displayList.length} vehicle(s)</p>
+              <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">{heading}</h1>
+              <p className="text-zinc-600 text-sm mt-1 dark:text-zinc-400">{displayList.length} vehicle(s)</p>
             </div>
             {isAdmin && (
               <Button onClick={openAdd} className="bg-[#E60012] hover:bg-[#C5000F] rounded-xl">
@@ -113,7 +113,7 @@ export default function VehicleCatalogPage({ type, heading, addLabel }: VehicleC
               className="flex gap-2"
             >
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-500" />
                 <Input placeholder="Search by name..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 rounded-xl" />
               </div>
               <Button type="submit" variant="outline" className="rounded-xl shrink-0">Search</Button>
@@ -131,8 +131,8 @@ export default function VehicleCatalogPage({ type, heading, addLabel }: VehicleC
           {loading ? (
             <LoadingSpinner className="py-24" label="Loading vehicles..." />
           ) : displayList.length === 0 ? (
-            <div className="text-center py-20 bg-zinc-50 rounded-2xl border border-zinc-200">
-              <p className="text-zinc-600 text-lg font-medium">No vehicles found</p>
+            <div className="text-center py-20 bg-zinc-50 rounded-2xl border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800">
+              <p className="text-zinc-600 text-lg font-medium dark:text-zinc-400">No vehicles found</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -156,7 +156,7 @@ export default function VehicleCatalogPage({ type, heading, addLabel }: VehicleC
         <div><Label>Price (Rs)</Label><Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} className="mt-1" /></div>
         <div><Label>Stock quantity</Label><Input type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })} className="mt-1" /></div>
         <div><Label>Image URL</Label><Input value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} placeholder="/assets/images/bikes/bike-1.jpg" className="mt-1" /></div>
-        <div><Label>Description</Label><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="w-full mt-1 px-3 py-2 border border-zinc-200 rounded-xl text-sm resize-y min-h-[80px]" /></div>
+        <div><Label>Description</Label><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="w-full mt-1 px-3 py-2 border border-zinc-200 rounded-xl text-sm resize-y min-h-[80px] dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100" /></div>
       </AddEditModal>
 
       <ConfirmDeleteDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title="Delete Vehicle" itemName={deleteTarget?.modelName} onConfirm={handleDelete} loading={deleting} />
