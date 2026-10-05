@@ -71,3 +71,7 @@ CREATE TABLE "activity_logs" (
 ALTER TABLE "stock_history" ADD CONSTRAINT "stock_history_vehicle_id_fkey" FOREIGN KEY ("vehicle_id") REFERENCES "vehicles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "stock_history" ADD CONSTRAINT "stock_history_part_id_fkey" FOREIGN KEY ("part_id") REFERENCES "parts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "activity_logs" ADD CONSTRAINT "activity_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- Add user_id FK to appointments for admin audit trail
+ALTER TABLE "appointments" ADD COLUMN "user_id" INTEGER;
+ALTER TABLE "appointments" ADD CONSTRAINT "appointments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
