@@ -119,7 +119,6 @@ model Part {
   type            PartType
   partName        String   @map("part_name")
   sku             String   @unique
-  category        String
   compatibleModel String?  @map("compatible_model")
   brand           String   @default("Suzuki")
   price           Float
