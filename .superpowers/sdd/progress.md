@@ -51,3 +51,10 @@ No conflicts detected. Proceeding.
 - lib/admin/permissions.ts: 11 permission helpers (canEditBikes, canDeleteParts, canManageAdmins, etc.)
 - app/permission-denied/page.tsx: 403 error page with dark mode
 
+
+**Task 4: COMPLETE** (commit 6d2fed5, clean)
+- Sidebar: Desktop fixed + mobile drawer, active red highlight
+- TopNav: Dark toggle, profile dropdown
+- Admin layout wrapper: Auth guard, responsive
+- use-media-query hook: Mobile detection
+
