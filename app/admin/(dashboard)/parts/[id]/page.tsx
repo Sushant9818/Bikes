@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import PartForm from '@/components/admin/forms/PartForm'
-import { LoadingSpinner } from '@/components/LoadingSpinner'
+import LoadingSpinner from '@/components/LoadingSpinner'
 
 interface Part {
   id: number

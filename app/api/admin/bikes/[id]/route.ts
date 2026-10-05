@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
-import { requireAdmin } from '@/lib/auth'
+import { requireAdmin, requireSuperAdmin } from '@/lib/auth'
 import { ApiError, handleApiError } from '@/lib/api-error'
 import { bikeInputSchema } from '@/lib/validations/bike'
 import { logBikeAction } from '@/lib/activity-log'
@@ -40,11 +41,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
       }
     }
 
+    const { specs, ...rest } = data
     const bike = await prisma.vehicle.update({
       where: { id: Number(id) },
       data: {
-        ...data,
+        ...rest,
         brand: 'Suzuki',
+        ...(specs !== undefined ? { specs: specs as Prisma.InputJsonValue } : {}),
       },
     })
 
@@ -59,7 +62,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
-    const user = await requireAdmin()
+    const user = await requireSuperAdmin()
     const { id } = await params
 
     const existing = await prisma.vehicle.findUnique({

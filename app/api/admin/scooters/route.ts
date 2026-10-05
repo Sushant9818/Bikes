@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth'
 import { handleApiError } from '@/lib/api-error'
@@ -52,13 +53,14 @@ export async function POST(req: NextRequest) {
   try {
     const user = await requireAdmin()
     const body = await req.json()
-    const validated = scooterSchema.parse(body)
+    const { specs, ...validated } = scooterSchema.parse(body)
 
     const scooter = await prisma.vehicle.create({
       data: {
         type: 'SCOOTER',
         ...validated,
         brand: 'Suzuki',
+        ...(specs !== undefined ? { specs: specs as Prisma.InputJsonValue } : {}),
       },
     })
 
@@ -79,7 +81,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function getSortOrder(sort: string) {
+function getSortOrder(sort: string): Prisma.VehicleOrderByWithRelationInput {
   switch (sort) {
     case 'name_asc':
       return { modelName: 'asc' }

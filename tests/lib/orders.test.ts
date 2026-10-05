@@ -23,7 +23,7 @@ import { createOrderDraft, finalizeOrder } from '@/lib/orders'
 import { ApiError } from '@/lib/api-error'
 import type { User } from '@prisma/client'
 
-const user = { id: 1, role: 'CLIENT' } as User
+const user = { id: 1, role: 'USER' } as User
 
 describe('createOrderDraft', () => {
   beforeEach(() => vi.clearAllMocks())

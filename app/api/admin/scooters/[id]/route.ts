@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
-import { requireAdmin } from '@/lib/auth'
+import { requireAdmin, requireSuperAdmin } from '@/lib/auth'
 import { handleApiError } from '@/lib/api-error'
 import { scooterSchema } from '@/lib/admin/validations'
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+type Params = { params: Promise<{ id: string }> }
+
+export async function GET(req: NextRequest, { params }: Params) {
   try {
+    const { id } = await params
     const scooter = await prisma.vehicle.findUnique({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
     })
 
     if (!scooter) {
@@ -20,14 +24,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: Params) {
   try {
     const user = await requireAdmin()
+    const { id } = await params
     const body = await req.json()
-    const validated = scooterSchema.parse(body)
+    const { specs, ...validated } = scooterSchema.parse(body)
 
     const existing = await prisma.vehicle.findUnique({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
     })
 
     if (!existing) {
@@ -35,8 +40,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     const updated = await prisma.vehicle.update({
-      where: { id: parseInt(params.id) },
-      data: validated,
+      where: { id: parseInt(id) },
+      data: {
+        ...validated,
+        ...(specs !== undefined ? { specs: specs as Prisma.InputJsonValue } : {}),
+      },
     })
 
     // Log activity
@@ -56,12 +64,13 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: Params) {
   try {
-    const user = await requireAdmin()
+    const user = await requireSuperAdmin()
+    const { id } = await params
 
     const existing = await prisma.vehicle.findUnique({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
     })
 
     if (!existing) {
@@ -69,7 +78,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     }
 
     await prisma.vehicle.delete({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
     })
 
     // Log activity
@@ -78,7 +87,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
         userId: user.id,
         action: 'DELETE_SCOOTER',
         entityType: 'Vehicle',
-        entityId: parseInt(params.id),
+        entityId: parseInt(id),
         changes: { before: existing },
       },
     })

@@ -3,7 +3,7 @@ export interface AdminUserDto {
   username: string | null
   email: string
   phoneNumber: string | null
-  role: 'ADMIN' | 'CLIENT'
+  role: 'ADMIN' | 'USER'
   enabled: boolean
   createdAt: string
 }
@@ -24,7 +24,7 @@ export function toAdminUserDto(user: ClerkUserLike): AdminUserDto {
   const email = user.emailAddresses.find((e) => e.id === user.primaryEmailAddressId)?.emailAddress
     ?? user.emailAddresses[0]?.emailAddress ?? ''
   const phoneNumber = user.phoneNumbers.find((p) => p.id === user.primaryPhoneNumberId)?.phoneNumber ?? null
-  const role: 'ADMIN' | 'CLIENT' = user.publicMetadata?.role === 'ADMIN' ? 'ADMIN' : 'CLIENT'
+  const role: 'ADMIN' | 'USER' = user.publicMetadata?.role === 'ADMIN' ? 'ADMIN' : 'USER'
 
   return {
     id: user.id,

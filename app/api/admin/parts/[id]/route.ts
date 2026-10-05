@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { requireAdmin } from '@/lib/auth'
+import { requireAdmin, requireSuperAdmin } from '@/lib/auth'
 import { handleApiError, ApiError } from '@/lib/api-error'
 
 const updatePartSchema = z.object({
@@ -108,7 +108,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const adminUser = await requireAdmin()
+    const adminUser = await requireSuperAdmin()
 
     const { id } = await params
     const partId = parseInt(id)

@@ -17,7 +17,7 @@ export async function requireUser(): Promise<User> {
     const email = clerkUser.primaryEmailAddress?.emailAddress
     if (!email) throw new ApiError(400, 'User has no email address')
 
-    const role: Role = clerkUser.publicMetadata?.role === 'ADMIN' ? 'ADMIN' : 'CLIENT'
+    const role: Role = clerkUser.publicMetadata?.role === 'ADMIN' ? 'ADMIN' : 'USER'
     const fullName = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || null
     // Real verified phone (added later as an MFA factor) takes priority over the
     // unverified value collected at sign-up, since phone_number sign-up itself is

@@ -65,7 +65,7 @@ export async function POST(req: Request) {
     ?? data.phone_numbers[0]?.phone_number
     ?? data.unsafe_metadata?.phoneNumber
     ?? null
-  const role: Role = data.public_metadata?.role === 'ADMIN' ? 'ADMIN' : 'CLIENT'
+  const role: Role = data.public_metadata?.role === 'ADMIN' ? 'ADMIN' : 'USER'
   const username = data.username ?? primaryEmail ?? data.id
   const fullName = [data.first_name, data.last_name].filter(Boolean).join(' ') || null
 

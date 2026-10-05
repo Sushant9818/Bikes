@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth'
 import { handleApiError } from '@/lib/api-error'
@@ -9,12 +10,13 @@ export async function POST(req: NextRequest) {
   try {
     const user = await requireAdmin()
     const body = await req.json()
-    const data = bikeInputSchema.parse(body)
+    const { specs, ...data } = bikeInputSchema.parse(body)
 
     const bike = await prisma.vehicle.create({
       data: {
         ...data,
         brand: 'Suzuki',
+        ...(specs !== undefined ? { specs: specs as Prisma.InputJsonValue } : {}),
       },
     })
 

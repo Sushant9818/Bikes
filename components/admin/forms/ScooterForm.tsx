@@ -8,14 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { ImageUpload } from '@/components/admin/ImageUpload'
+import ImageUpload from '@/components/admin/ImageUpload'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface ScooterFormProps {
@@ -118,16 +111,14 @@ export function ScooterForm({ initialData, isLoading = false, onSubmit }: Scoote
 
           <div>
             <Label htmlFor="status" className="dark:text-zinc-200">Status *</Label>
-            <Select defaultValue={initialData?.status || 'ACTIVE'} onValueChange={(v) => setValue('status' as any, v as any)}>
-              <SelectTrigger className="mt-1 dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="dark:bg-zinc-900 dark:border-zinc-700">
-                <SelectItem value="ACTIVE">Active</SelectItem>
-                <SelectItem value="DRAFT">Draft</SelectItem>
-                <SelectItem value="OUT_OF_STOCK">Out of Stock</SelectItem>
-              </SelectContent>
-            </Select>
+            <select
+              id="status"
+              {...register('status')}
+              className="mt-1 w-full px-3 py-2 border border-zinc-200 rounded-md bg-white dark:bg-zinc-900 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
+            >
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
           </div>
 
           <div className="space-y-2">
@@ -189,7 +180,7 @@ export function ScooterForm({ initialData, isLoading = false, onSubmit }: Scoote
         <TabsContent value="images">
           <ImageUpload
             images={images}
-            onImagesChange={(imgs) => setValue('images', imgs)}
+            onImagesChange={(imgs: string[]) => setValue('images', imgs)}
           />
         </TabsContent>
 
