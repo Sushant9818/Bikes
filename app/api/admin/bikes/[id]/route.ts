@@ -1,118 +1,80 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth'
-import { handleApiError, ApiError } from '@/lib/api-error'
+import { ApiError, handleApiError } from '@/lib/api-error'
+import { bikeInputSchema } from '@/lib/validations/bike'
+import { logBikeAction } from '@/lib/activity-log'
 
-const updateBikeSchema = z.object({
-  modelName: z.string().min(1).optional(),
-  brand: z.string().optional(),
-  price: z.number().positive().optional(),
-  discountPrice: z.number().positive().optional().nullable(),
-  year: z.number().int().optional().nullable(),
-  quantity: z.number().int().nonnegative().optional(),
-  imageUrl: z.string().url().optional().nullable(),
-  images: z.array(z.string()).optional(),
-  description: z.string().optional().nullable(),
-  colors: z.array(z.string()).optional(),
-  category: z.string().optional().nullable(),
-  specs: z.record(z.any()).optional().nullable(),
-  status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
-  isFeatured: z.boolean().optional(),
-  isNewArrival: z.boolean().optional(),
-  seoTitle: z.string().optional().nullable(),
-  seoDescription: z.string().optional().nullable(),
-})
+type Params = { params: Promise<{ id: string }> }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_req: NextRequest, { params }: Params) {
   try {
-    const adminUser = await requireAdmin()
-    const id = parseInt(params.id)
-
-    if (isNaN(id)) {
-      throw new ApiError(400, 'Invalid bike ID')
-    }
-
-    const bike = await prisma.vehicle.findUnique({ where: { id } })
-    if (!bike) {
-      throw new ApiError(404, 'Bike not found')
-    }
-
-    const body = await request.json()
-    const validatedData = updateBikeSchema.parse(body)
-
-    // Check if modelName already exists (excluding current bike)
-    if (validatedData.modelName && validatedData.modelName !== bike.modelName) {
-      const existing = await prisma.vehicle.findFirst({
-        where: {
-          modelName: validatedData.modelName,
-          id: { not: id },
-        },
-      })
-      if (existing) {
-        throw new ApiError(409, 'Bike model already exists')
-      }
-    }
-
-    const updated = await prisma.vehicle.update({
-      where: { id },
-      data: validatedData,
+    const { id } = await params
+    const bike = await prisma.vehicle.findUnique({
+      where: { id: Number(id) },
     })
-
-    // Log activity
-    await prisma.activityLog.create({
-      data: {
-        userId: adminUser.id,
-        action: 'UPDATE',
-        entityType: 'VEHICLE',
-        entityId: id,
-        changes: validatedData,
-      },
-    })
-
-    return NextResponse.json(updated)
+    if (!bike) throw new ApiError(404, 'Bike not found')
+    return NextResponse.json(bike)
   } catch (err) {
     return handleApiError(err)
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(req: NextRequest, { params }: Params) {
   try {
-    const adminUser = await requireAdmin()
-    const id = parseInt(params.id)
+    const user = await requireAdmin()
+    const { id } = await params
+    const body = await req.json()
+    const data = bikeInputSchema.parse(body)
 
-    if (isNaN(id)) {
-      throw new ApiError(400, 'Invalid bike ID')
+    const existing = await prisma.vehicle.findUnique({
+      where: { id: Number(id) },
+    })
+    if (!existing) throw new ApiError(404, 'Bike not found')
+
+    // Calculate changes for activity log
+    const changes: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(data)) {
+      if (JSON.stringify((existing as never)[key]) !== JSON.stringify(value)) {
+        changes[key] = { from: (existing as never)[key], to: value }
+      }
     }
 
-    const bike = await prisma.vehicle.findUnique({ where: { id } })
-    if (!bike) {
-      throw new ApiError(404, 'Bike not found')
-    }
-
-    await prisma.vehicle.delete({ where: { id } })
-
-    // Log activity
-    await prisma.activityLog.create({
+    const bike = await prisma.vehicle.update({
+      where: { id: Number(id) },
       data: {
-        userId: adminUser.id,
-        action: 'DELETE',
-        entityType: 'VEHICLE',
-        entityId: id,
-        changes: {
-          modelName: bike.modelName,
-          price: bike.price,
-        },
+        ...data,
+        brand: 'Suzuki',
       },
     })
 
-    return NextResponse.json({ message: 'Bike deleted successfully' })
+    // Log the update
+    await logBikeAction(user, 'UPDATE', bike.id, changes)
+
+    return NextResponse.json(bike)
+  } catch (err) {
+    return handleApiError(err)
+  }
+}
+
+export async function DELETE(_req: NextRequest, { params }: Params) {
+  try {
+    const user = await requireAdmin()
+    const { id } = await params
+
+    const existing = await prisma.vehicle.findUnique({
+      where: { id: Number(id) },
+    })
+    if (!existing) throw new ApiError(404, 'Bike not found')
+
+    await prisma.vehicle.delete({
+      where: { id: Number(id) },
+    })
+
+    // Log the deletion
+    await logBikeAction(user, 'DELETE', Number(id), { deletedBike: existing })
+
+    return new NextResponse(null, { status: 204 })
   } catch (err) {
     return handleApiError(err)
   }
