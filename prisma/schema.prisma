@@ -7,8 +7,9 @@ datasource db {
 }
 
 enum Role {
+  SUPER_ADMIN
   ADMIN
-  CLIENT
+  USER
 }
 
 enum VehicleType {
@@ -64,31 +65,50 @@ enum ServiceType {
 }
 
 model User {
-  id          Int      @id @default(autoincrement())
-  clerkUserId String   @unique @map("clerk_user_id")
-  username    String   @unique
-  fullName    String?  @map("full_name")
-  email       String   @unique
-  phoneNumber String?  @map("phone_number")
-  role        Role     @default(CLIENT)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id              Int       @id @default(autoincrement())
+  clerkUserId     String    @unique @map("clerk_user_id")
+  username        String    @unique
+  fullName        String?   @map("full_name")
+  email           String    @unique
+  phoneNumber     String?   @map("phone_number")
+  role            Role      @default(USER)
+  status          String    @default("ACTIVE")
+  avatar          String?
+  lastLogin       DateTime? @map("last_login")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  orders      Order[]
+  orders          Order[]
+  activityLogs    ActivityLog[]
 
   @@map("users")
 }
 
 model Vehicle {
-  id          Int         @id @default(autoincrement())
-  type        VehicleType
-  modelName   String      @map("model_name")
-  brand       String      @default("Suzuki")
-  year        Int
-  price       Float
-  quantity    Int
-  imageUrl    String?     @map("image_url")
-  description String?
+  id              Int         @id @default(autoincrement())
+  type            VehicleType
+  modelName       String      @unique @map("model_name")
+  slug            String?     @unique
+  category        String?
+  brand           String      @default("Suzuki")
+  price           Float
+  discountPrice   Float?      @map("discount_price")
+  year            Int?
+  quantity        Int
+  imageUrl        String?     @map("image_url")
+  images          String[]    @default([])
+  description     String?
+  specs           Json?
+  colors          String[]    @default([])
+  status          String      @default("ACTIVE")
+  isFeatured      Boolean     @default(false) @map("is_featured")
+  isNewArrival    Boolean     @default(false) @map("is_new_arrival")
+  seoTitle        String?     @map("seo_title")
+  seoDescription  String?     @map("seo_description")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  stockHistory    StockHistory[]
 
   @@map("vehicles")
 }
@@ -96,16 +116,50 @@ model Vehicle {
 model Part {
   id              Int      @id @default(autoincrement())
   type            PartType
-  brand           String   @default("Suzuki")
   partName        String   @map("part_name")
+  sku             String   @unique
+  category        String
   compatibleModel String?  @map("compatible_model")
+  brand           String   @default("Suzuki")
   price           Float
   quantity        Int
+  minStock        Int      @default(10) @map("min_stock")
   imageUrl        String?  @map("image_url")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
+  stockHistory    StockHistory[]
   orderItems      OrderItem[]
 
   @@map("parts")
+}
+
+model StockHistory {
+  id              Int       @id @default(autoincrement())
+  vehicleId       Int?      @map("vehicle_id")
+  vehicle         Vehicle?  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  partId          Int?      @map("part_id")
+  part            Part?     @relation(fields: [partId], references: [id], onDelete: Cascade)
+  quantityChange  Int       @map("quantity_change")
+  reason          String
+  notes           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@map("stock_history")
+}
+
+model ActivityLog {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @map("user_id")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action          String
+  entityType      String    @map("entity_type")
+  entityId        Int?      @map("entity_id")
+  changes         Json?
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@map("activity_logs")
 }
 
 model Offer {
