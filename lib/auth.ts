@@ -45,6 +45,14 @@ export async function requireUser(): Promise<User> {
 
 export async function requireAdmin(): Promise<User> {
   const user = await requireUser()
-  if (user.role !== 'ADMIN') throw new ApiError(403, 'Admin access required')
+  if (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+    throw new ApiError(403, 'Admin access required')
+  }
+  return user
+}
+
+export async function requireSuperAdmin(): Promise<User> {
+  const user = await requireUser()
+  if (user.role !== 'SUPER_ADMIN') throw new ApiError(403, 'Super admin access required')
   return user
 }
