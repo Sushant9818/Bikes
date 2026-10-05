@@ -80,6 +80,7 @@ model User {
 
   orders          Order[]
   activityLogs    ActivityLog[]
+  appointments    Appointment[]
 
   @@map("users")
 }
@@ -207,6 +208,8 @@ model OrderItem {
 
 model Appointment {
   id                 Int                  @id @default(autoincrement())
+  userId             Int?                 @map("user_id")
+  user               User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
   clientUsername     String               @map("client_username")
   bikeModel          String               @map("bike_model")
   bikeYear           Int?                 @map("bike_year")
