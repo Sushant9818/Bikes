@@ -44,3 +44,10 @@ No conflicts detected. Proceeding.
 - Seed runs successfully
 - Deferred: Zod validation in seed (optional consistency improvement)
 
+
+**Task 3: COMPLETE** (commit 660589f, spec ✅, no issues)
+- middleware.ts: /admin route protection, Clerk + Prisma role checks
+- lib/auth.ts: requireSuperAdmin() + requireAdmin() updated
+- lib/admin/permissions.ts: 11 permission helpers (canEditBikes, canDeleteParts, canManageAdmins, etc.)
+- app/permission-denied/page.tsx: 403 error page with dark mode
+
