@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
+    await requireAdmin()
     const searchParams = req.nextUrl.searchParams
     const type = searchParams.get('type')
     const skip = Number(searchParams.get('skip')) || 0
