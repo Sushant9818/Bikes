@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useAuth } from '@clerk/nextjs'
 import { LayoutDashboard, AlertCircle } from 'lucide-react'
 import DashboardCards from '@/components/admin/DashboardCards'
 import RevenueChart from '@/components/admin/RevenueChart'
@@ -40,7 +39,6 @@ interface DashboardData {
 }
 
 export default function AdminDashboard() {
-  const { getToken } = useAuth()
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -48,9 +46,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const token = await getToken()
         const response = await fetch('/api/admin/dashboard', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          credentials: 'include',
         })
         if (!response.ok) throw new Error('Failed to fetch dashboard data')
         const result = await response.json()
@@ -63,7 +60,7 @@ export default function AdminDashboard() {
     }
 
     fetchDashboardData()
-  }, [getToken])
+  }, [])
 
   if (loading) {
     return (
