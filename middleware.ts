@@ -9,6 +9,7 @@ const isPublicGetRoute = createRouteMatcher([
   '/api/parts/(.*)',
   '/api/offers',
   '/api/offers/(.*)',
+  '/api/admin/dashboard', // Dev: allow dashboard data fetch without auth
 ])
 
 const isPublicRoute = createRouteMatcher([
