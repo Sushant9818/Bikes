@@ -1,11 +1,5 @@
-'use client'
-
 import { Suspense } from 'react'
 import { AppointmentsTable } from '@/components/admin/AppointmentsTable'
-
-export const metadata = {
-  title: 'Appointments - Admin',
-}
 
 export default function AppointmentsPage() {
   return (

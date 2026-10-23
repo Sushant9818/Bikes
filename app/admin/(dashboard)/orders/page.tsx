@@ -1,11 +1,5 @@
-'use client'
-
 import { Suspense } from 'react'
 import { OrdersTable } from '@/components/admin/OrdersTable'
-
-export const metadata = {
-  title: 'Orders - Admin',
-}
 
 export default function OrdersPage() {
   return (

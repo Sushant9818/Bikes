@@ -1,11 +1,5 @@
-'use client'
-
 import { Suspense } from 'react'
 import { CustomersTable } from '@/components/admin/CustomersTable'
-
-export const metadata = {
-  title: 'Customers - Admin',
-}
 
 export default function CustomersPage() {
   return (

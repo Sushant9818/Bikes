@@ -1,13 +1,7 @@
-'use client'
-
 import { Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { OffersTable } from '@/components/admin/OffersTable'
 import Link from 'next/link'
-
-export const metadata = {
-  title: 'Offers - Admin',
-}
 
 export default function OffersPage() {
   return (
