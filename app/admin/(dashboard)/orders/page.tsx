@@ -1,3 +1,5 @@
+'use client'
+
 import { Suspense } from 'react'
 import { OrdersTable } from '@/components/admin/OrdersTable'
 

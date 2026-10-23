@@ -1,3 +1,5 @@
+'use client'
+
 import { Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { OffersTable } from '@/components/admin/OffersTable'
