@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, X, LayoutDashboard, Bike, Scooter, Wrench } from 'lucide-react'
+import { Menu, X, LayoutDashboard, Bike, Scooter, Wrench, Gift, Package, Users, Calendar } from 'lucide-react'
 import { useMediaQuery } from '@/lib/hooks/use-media-query'
 import { cn } from '@/lib/utils'
 
@@ -12,6 +12,10 @@ const menuItems = [
   { href: '/admin/bikes', label: 'Bikes', icon: Bike },
   { href: '/admin/scooters', label: 'Scooters', icon: Scooter },
   { href: '/admin/parts', label: 'Parts', icon: Wrench },
+  { href: '/admin/offers', label: 'Offers', icon: Gift },
+  { href: '/admin/orders', label: 'Orders', icon: Package },
+  { href: '/admin/customers', label: 'Customers', icon: Users },
+  { href: '/admin/appointments', label: 'Appointments', icon: Calendar },
 ]
 
 interface SidebarProps {
