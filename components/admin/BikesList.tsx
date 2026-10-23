@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Edit2, Trash2, Eye } from 'lucide-react'
+import { useAuth } from '@clerk/nextjs'
 import type { Vehicle } from '@prisma/client'
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog'
 
@@ -11,13 +12,18 @@ interface BikesListProps {
 }
 
 export default function BikesList({ bikes }: BikesListProps) {
+  const { getToken } = useAuth()
   const [deleting, setDeleting] = useState<number | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null)
 
   async function handleDelete(id: number) {
     try {
       setDeleting(id)
-      const response = await fetch(`/api/admin/bikes/${id}`, { method: 'DELETE' })
+      const token = await getToken()
+      const response = await fetch(`/api/admin/bikes/${id}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       if (!response.ok) throw new Error('Failed to delete bike')
       window.location.reload()
     } catch (error) {
