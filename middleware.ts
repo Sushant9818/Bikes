@@ -34,6 +34,7 @@ const isPublicRoute = createRouteMatcher([
   '/api/test-drive',
   '/api/payments/webhook',
   '/api/webhooks/clerk',
+  '/admin/(.*)', // Dev: allow all admin pages
 ])
 
 const isAdminRoute = createRouteMatcher([
