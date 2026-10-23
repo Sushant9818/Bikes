@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { LayoutDashboard, AlertCircle } from 'lucide-react'
 import DashboardCards from '@/components/admin/DashboardCards'
 import RevenueChart from '@/components/admin/RevenueChart'
@@ -39,6 +40,7 @@ interface DashboardData {
 }
 
 export default function AdminDashboard() {
+  const { getToken } = useAuth()
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -46,7 +48,10 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const response = await fetch('/api/admin/dashboard')
+        const token = await getToken()
+        const response = await fetch('/api/admin/dashboard', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
         if (!response.ok) throw new Error('Failed to fetch dashboard data')
         const result = await response.json()
         setData(result)
@@ -58,7 +63,7 @@ export default function AdminDashboard() {
     }
 
     fetchDashboardData()
-  }, [])
+  }, [getToken])
 
   if (loading) {
     return (
@@ -98,114 +103,52 @@ export default function AdminDashboard() {
       <DashboardCards kpis={data.kpis} />
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="lg:col-span-2">
-          <RevenueChart data={data.monthlyRevenue} />
-        </div>
-        <div>
-          <CategoryPieChart data={data.categoryRevenue} />
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <RevenueChart data={data.monthlyRevenue} />
+        <CategoryPieChart data={data.categoryRevenue} />
       </div>
 
-      {/* Alerts and Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Low Stock Alerts */}
-        <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 border border-zinc-200 dark:border-zinc-800 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <AlertCircle className="w-5 h-5 text-amber-500" />
-            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-              Low Stock Alerts
-            </h2>
-          </div>
-          <div className="space-y-3">
-            {data.lowStockParts.length > 0 ? (
-              data.lowStockParts.map((part) => (
-                <div
-                  key={part.id}
-                  className={`p-3 rounded-lg border ${
-                    part.status === 'critical'
-                      ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800'
-                      : 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800'
-                  }`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm">
-                        {part.name}
-                      </p>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                        SKU: {part.sku}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p
-                        className={`text-sm font-bold ${
-                          part.status === 'critical'
-                            ? 'text-red-600 dark:text-red-400'
-                            : 'text-amber-600 dark:text-amber-400'
-                        }`}
-                      >
-                        {part.quantity} / {part.minStock}
-                      </p>
-                    </div>
-                  </div>
+      {/* Low Stock Alerts */}
+      {data.lowStockParts.length > 0 && (
+        <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6 mb-8">
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Low Stock Alerts</h2>
+          <div className="space-y-2">
+            {data.lowStockParts.map((part) => (
+              <div key={part.id} className="flex justify-between items-center p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded">
+                <div>
+                  <p className="font-medium text-zinc-900 dark:text-zinc-100">{part.name}</p>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">SKU: {part.sku}</p>
                 </div>
-              ))
-            ) : (
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center py-4">
-                No low stock alerts
-              </p>
-            )}
+                <div className="text-right">
+                  <p className="font-semibold text-yellow-700 dark:text-yellow-500">{part.quantity} left</p>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">Min: {part.minStock}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
+      )}
 
-        {/* Recent Appointments */}
-        <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 border border-zinc-200 dark:border-zinc-800 shadow-sm">
-          <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-6">
-            Recent Appointments
-          </h2>
+      {/* Recent Appointments */}
+      {data.recentAppointments.length > 0 && (
+        <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6">
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Recent Appointments</h2>
           <div className="space-y-3">
-            {data.recentAppointments.length > 0 ? (
-              data.recentAppointments.map((apt) => (
-                <div
-                  key={apt.id}
-                  className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700"
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm">
-                        {apt.clientUsername}
-                      </p>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                        {apt.bikeModel}
-                      </p>
-                    </div>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        apt.status === 'APPROVED'
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                          : apt.status === 'IN_PROGRESS'
-                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-                            : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
-                      }`}
-                    >
-                      {apt.status.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex justify-between text-xs text-zinc-500 dark:text-zinc-400">
-                    <span>{new Date(apt.preferredDate).toLocaleDateString()}</span>
-                    <span>{apt.serviceCount} services</span>
-                  </div>
+            {data.recentAppointments.map((appt) => (
+              <div key={appt.id} className="flex justify-between items-center p-3 border border-zinc-200 dark:border-zinc-800 rounded">
+                <div>
+                  <p className="font-medium text-zinc-900 dark:text-zinc-100">{appt.clientUsername}</p>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">{appt.bikeModel}</p>
                 </div>
-              ))
-            ) : (
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center py-4">
-                No recent appointments
-              </p>
-            )}
+                <div className="text-right">
+                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{appt.preferredDate}</p>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 capitalize">{appt.status}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
