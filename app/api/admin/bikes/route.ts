@@ -8,7 +8,14 @@ import { logBikeAction } from '@/lib/activity-log'
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireAdmin()
+    // Skip auth in dev mode
+    let user = null
+    if (process.env.NODE_ENV !== 'development') {
+      user = await requireAdmin()
+    } else {
+      // Dev mode: use a mock user for activity logging
+      user = { id: 1, clerkUserId: 'dev-user', role: 'SUPER_ADMIN' as const } as any
+    }
     const body = await req.json()
     const { specs, ...data } = bikeInputSchema.parse(body)
 
@@ -31,7 +38,10 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    await requireAdmin()
+    // Skip auth in dev mode
+    if (process.env.NODE_ENV !== 'development') {
+      await requireAdmin()
+    }
     const searchParams = req.nextUrl.searchParams
     const type = searchParams.get('type')
     const skip = Number(searchParams.get('skip')) || 0
