@@ -4,14 +4,15 @@ import { requireAdmin } from '@/lib/auth'
 import { handleApiError } from '@/lib/api-error'
 import { appointmentUpdateSchema } from '@/lib/validations/appointment'
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (process.env.NODE_ENV !== 'development') {
       await requireAdmin()
     }
 
+    const { id } = await params
     const appointment = await prisma.appointment.findUnique({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
       include: {
         services: true,
       },
@@ -27,17 +28,18 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (process.env.NODE_ENV !== 'development') {
       await requireAdmin()
     }
 
+    const { id } = await params
     const body = await req.json()
     const validated = appointmentUpdateSchema.parse(body)
 
     const appointment = await prisma.appointment.update({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
       data: {
         ...(validated.bikeYear !== undefined && { bikeYear: validated.bikeYear }),
         ...(validated.vin !== undefined && { vin: validated.vin }),
@@ -59,14 +61,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (process.env.NODE_ENV !== 'development') {
       await requireAdmin()
     }
 
+    const { id } = await params
     await prisma.appointment.delete({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
     })
 
     return NextResponse.json({ success: true })

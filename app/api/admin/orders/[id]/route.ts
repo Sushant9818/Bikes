@@ -4,14 +4,15 @@ import { requireAdmin } from '@/lib/auth'
 import { handleApiError } from '@/lib/api-error'
 import { orderStatusUpdateSchema } from '@/lib/validations/order'
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (process.env.NODE_ENV !== 'development') {
       await requireAdmin()
     }
 
+    const { id } = await params
     const order = await prisma.order.findUnique({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
       include: {
         items: {
           include: {
@@ -31,14 +32,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (process.env.NODE_ENV !== 'development') {
       await requireAdmin()
     }
 
+    const { id } = await params
     await prisma.order.delete({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
     })
 
     return NextResponse.json({ success: true })
@@ -47,18 +49,19 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (process.env.NODE_ENV !== 'development') {
       await requireAdmin()
     }
 
+    const { id } = await params
     const body = await req.json()
     const validated = orderStatusUpdateSchema.parse(body)
 
     // Validate status workflow
     const order = await prisma.order.findUnique({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
     })
 
     if (!order) {
@@ -81,7 +84,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 
     const updated = await prisma.order.update({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
       data: { status: validated.status },
     })
 

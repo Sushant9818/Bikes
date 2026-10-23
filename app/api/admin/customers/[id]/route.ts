@@ -4,14 +4,15 @@ import { requireAdmin } from '@/lib/auth'
 import { handleApiError } from '@/lib/api-error'
 import { customerUpdateSchema } from '@/lib/validations/customer'
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (process.env.NODE_ENV !== 'development') {
       await requireAdmin()
     }
 
+    const { id } = await params
     const user = await prisma.user.findUnique({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
       include: {
         orders: {
           orderBy: { createdAt: 'desc' },
@@ -52,17 +53,18 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (process.env.NODE_ENV !== 'development') {
       await requireAdmin()
     }
 
+    const { id } = await params
     const body = await req.json()
     const validated = customerUpdateSchema.parse(body)
 
     const user = await prisma.user.update({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
       data: {
         ...(validated.name && { name: validated.name }),
         ...(validated.email && { email: validated.email }),
@@ -77,14 +79,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (process.env.NODE_ENV !== 'development') {
       await requireAdmin()
     }
 
+    const { id } = await params
     await prisma.user.delete({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
     })
 
     return NextResponse.json({ success: true })

@@ -4,14 +4,15 @@ import { requireAdmin } from '@/lib/auth'
 import { handleApiError } from '@/lib/api-error'
 import { offerUpdateSchema } from '@/lib/validations/offer'
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (process.env.NODE_ENV !== 'development') {
       await requireAdmin()
     }
 
+    const { id } = await params
     const offer = await prisma.offer.findUnique({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
     })
 
     if (!offer) {
@@ -24,17 +25,18 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (process.env.NODE_ENV !== 'development') {
       await requireAdmin()
     }
 
+    const { id } = await params
     const body = await req.json()
     const validated = offerUpdateSchema.parse(body)
 
     const offer = await prisma.offer.update({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
       data: {
         ...(validated.title && { title: validated.title }),
         ...(validated.description !== undefined && { description: validated.description }),
@@ -51,14 +53,15 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (process.env.NODE_ENV !== 'development') {
       await requireAdmin()
     }
 
+    const { id } = await params
     await prisma.offer.delete({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
     })
 
     return NextResponse.json({ success: true })
