@@ -23,7 +23,6 @@ export async function PUT(req: NextRequest, { params }: Params) {
       data: {
         preferredDate: new Date(data.preferredDate),
         preferredTime: data.preferredTime,
-        ...(data.bikeModel ? { bikeModel: data.bikeModel } : {}),
       },
       include: { services: true },
     })

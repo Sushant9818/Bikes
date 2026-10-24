@@ -24,7 +24,6 @@ export async function POST(req: NextRequest) {
         preferredDate: new Date(data.preferredDate),
         preferredTime: data.preferredTime,
         status: 'PENDING',
-        services: { create: data.services.map((service) => ({ service })) },
       },
       include: { services: true },
     })

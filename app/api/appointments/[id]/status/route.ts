@@ -20,11 +20,6 @@ export async function PUT(req: NextRequest, { params }: Params) {
       where: { id: Number(id) },
       data: {
         status: data.status,
-        repairNotes: data.repairNotes ?? existing.repairNotes,
-        serviceNotes: data.serviceNotes ?? existing.serviceNotes,
-        mechanicName: data.mechanicName ?? existing.mechanicName,
-        estimatedCost: data.estimatedCost ?? existing.estimatedCost,
-        finalCost: data.finalCost ?? existing.finalCost,
       },
       include: { services: true },
     })
