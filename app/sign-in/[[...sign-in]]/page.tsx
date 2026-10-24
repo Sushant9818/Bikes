@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSignIn } from '@clerk/nextjs/legacy'
+import { useUser } from '@clerk/nextjs'
 import Link from 'next/link'
 import { Bike } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -11,11 +12,24 @@ import { Label } from '@/components/ui/label'
 
 export default function SignInPage() {
   const { isLoaded, signIn, setActive } = useSignIn()
+  const { user, isLoaded: userLoaded } = useUser()
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [shouldRedirect, setShouldRedirect] = useState(false)
+
+  useEffect(() => {
+    if (!shouldRedirect || !userLoaded) return
+
+    const role = (user?.publicMetadata?.role as string | undefined) ?? 'USER'
+    if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
+      router.push('/admin')
+    } else {
+      router.push('/')
+    }
+  }, [shouldRedirect, user, userLoaded, router])
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -26,7 +40,7 @@ export default function SignInPage() {
       const result = await signIn.create({ identifier: email, password })
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId })
-        router.push('/')
+        setShouldRedirect(true)
       } else {
         setError('Additional verification is required for this account.')
       }
