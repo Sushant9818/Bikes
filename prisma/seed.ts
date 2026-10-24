@@ -1,211 +1,213 @@
-import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
+import { PrismaClient } from '@prisma/client'
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
-
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient()
 
 async function main() {
-  console.log("🌱 Starting database seed...");
-
-  // Clear existing data in order to avoid conflicts
-  console.log("🗑️  Clearing existing data...");
-  await prisma.appointmentService.deleteMany({});
-  await prisma.appointment.deleteMany({});
-  await prisma.orderItem.deleteMany({});
-  await prisma.order.deleteMany({});
-  await prisma.activityLog.deleteMany({});
-  await prisma.stockHistory.deleteMany({});
-  await prisma.part.deleteMany({});
-  await prisma.vehicle.deleteMany({});
-  await prisma.offer.deleteMany({});
-  await prisma.testDriveRequest.deleteMany({});
-  await prisma.contactRequest.deleteMany({});
-  await prisma.user.deleteMany({});
-
-  console.log("✅ Data cleared successfully");
-
-  // Create SUPER_ADMIN user
-  console.log("👤 Creating SUPER_ADMIN user...");
-  const superAdmin = await prisma.user.create({
+  // Create customers
+  const customer1 = await prisma.user.create({
     data: {
-      clerkUserId: "clerk_super_admin_001",
-      username: "superadmin",
-      fullName: "Super Administrator",
-      email: "admin@suzukibike.com",
-      phoneNumber: "+91-9876543210",
-      role: "SUPER_ADMIN",
-      status: "ACTIVE",
-      avatar: null,
+      clerkUserId: 'clerk_user_1',
+      username: 'john_doe',
+      fullName: 'John Doe',
+      email: 'john@example.com',
+      phoneNumber: '+977-9841234567',
+      role: 'USER',
     },
-  });
-  console.log("✅ SUPER_ADMIN user created:", superAdmin);
+  })
 
-  // Create 3 vehicles
-  console.log("🏍️  Creating vehicles...");
-  const vehicles = await Promise.all([
-    prisma.vehicle.create({
-      data: {
-        type: "BIKE",
-        modelName: "Suzuki GSX-R750",
-        slug: "suzuki-gsx-r750",
-        category: "Sportbike",
-        brand: "Suzuki",
-        price: 850000,
-        discountPrice: 799999,
-        year: 2024,
-        quantity: 5,
-        imageUrl:
-          "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500",
-        images: [
-          "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500",
-        ],
-        description: "High-performance sportbike with advanced electronics",
-        specs: {
-          engine: "749cc Parallel Twin",
-          maxPower: "110 hp",
-          maxTorque: "86 Nm",
-          fuelCapacity: "20 liters",
-        },
-        colors: ["Red", "Black", "Blue"],
-        status: "ACTIVE",
-        isFeatured: true,
-        isNewArrival: true,
-        seoTitle: "Suzuki GSX-R750 - High-Performance Sportbike",
-        seoDescription: "Experience ultimate riding with Suzuki GSX-R750",
-      },
-    }),
-    prisma.vehicle.create({
-      data: {
-        type: "SCOOTER",
-        modelName: "Suzuki Address 125",
-        slug: "suzuki-address-125",
-        category: "Scooter",
-        brand: "Suzuki",
-        price: 120000,
-        discountPrice: 110000,
-        year: 2024,
-        quantity: 15,
-        imageUrl:
-          "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500",
-        images: [
-          "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500",
-        ],
-        description: "Efficient and stylish scooter for daily commuting",
-        specs: {
-          engine: "125cc Single Cylinder",
-          maxPower: "8.5 hp",
-          maxTorque: "10.2 Nm",
-          fuelCapacity: "5.5 liters",
-        },
-        colors: ["Silver", "Black", "Pearl White"],
-        status: "ACTIVE",
-        isFeatured: false,
-        isNewArrival: false,
-        seoTitle: "Suzuki Address 125 - Efficient Scooter",
-        seoDescription: "Commute in style with Suzuki Address 125",
-      },
-    }),
-    prisma.vehicle.create({
-      data: {
-        type: "BIKE",
-        modelName: "Suzuki Gixxer 250",
-        slug: "suzuki-gixxer-250",
-        category: "Street Bike",
-        brand: "Suzuki",
-        price: 250000,
-        discountPrice: 235000,
-        year: 2024,
-        quantity: 8,
-        imageUrl:
-          "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500",
-        images: [
-          "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500",
-        ],
-        description: "Aggressive street bike with modern styling",
-        specs: {
-          engine: "249cc Single Cylinder",
-          maxPower: "26.5 hp",
-          maxTorque: "22.2 Nm",
-          fuelCapacity: "12 liters",
-        },
-        colors: ["Red", "Black", "Silver"],
-        status: "ACTIVE",
-        isFeatured: true,
-        isNewArrival: true,
-        seoTitle: "Suzuki Gixxer 250 - Street Bike Performance",
-        seoDescription: "Ride with aggression and style - Suzuki Gixxer 250",
-      },
-    }),
-  ]);
-  console.log("✅ Vehicles created successfully:", vehicles.length);
+  const customer2 = await prisma.user.create({
+    data: {
+      clerkUserId: 'clerk_user_2',
+      username: 'jane_smith',
+      fullName: 'Jane Smith',
+      email: 'jane@example.com',
+      phoneNumber: '+977-9842345678',
+      role: 'USER',
+    },
+  })
 
-  // Create 3 parts
-  console.log("🔧 Creating parts...");
-  const parts = await Promise.all([
-    prisma.part.create({
-      data: {
-        type: "BIKE_PART",
-        partName: "Premium Brake Pads Set",
-        sku: "BRAKE-PAD-001",
-        compatibleModel: "Multiple Models",
-        brand: "Suzuki",
-        price: 2500,
-        quantity: 50,
-        minStock: 10,
-        imageUrl:
-          "https://images.unsplash.com/photo-1487754180144-351b8e3fedc9?w=500",
-      },
-    }),
-    prisma.part.create({
-      data: {
-        type: "BIKE_PART",
-        partName: "Air Filter Standard",
-        sku: "AIR-FILTER-002",
-        compatibleModel: "Multiple Models",
-        brand: "Suzuki",
-        price: 800,
-        quantity: 100,
-        minStock: 20,
-        imageUrl:
-          "https://images.unsplash.com/photo-1487754180144-351b8e3fedc9?w=500",
-      },
-    }),
-    prisma.part.create({
-      data: {
-        type: "SCOOTER_PART",
-        partName: "Spark Plug Premium",
-        sku: "SPARK-PLUG-003",
-        compatibleModel: "Address Series",
-        brand: "Suzuki",
-        price: 400,
-        quantity: 200,
-        minStock: 50,
-        imageUrl:
-          "https://images.unsplash.com/photo-1487754180144-351b8e3fedc9?w=500",
-      },
-    }),
-  ]);
-  console.log("✅ Parts created successfully:", parts.length);
+  const customer3 = await prisma.user.create({
+    data: {
+      clerkUserId: 'clerk_user_3',
+      username: 'ram_kumar',
+      fullName: 'Ram Kumar',
+      email: 'ram@example.com',
+      phoneNumber: '+977-9843456789',
+      role: 'USER',
+    },
+  })
 
-  console.log("✨ Database seeding completed successfully!");
-  console.log(`
-Summary:
-- SUPER_ADMIN users: 1
-- Vehicles created: ${vehicles.length}
-- Parts created: ${parts.length}
-  `);
+  // Create offers
+  await prisma.offer.create({
+    data: {
+      title: 'Monsoon Special - 20% Off',
+      description: 'Get 20% discount on all parts and accessories during monsoon season',
+      discountPercent: 20,
+      startDate: new Date('2026-06-01'),
+      endDate: new Date('2026-09-30'),
+      imageUrl: '/images/monsoon-offer.jpg',
+    },
+  })
+
+  await prisma.offer.create({
+    data: {
+      title: 'Summer Clearance - 15% Off',
+      description: 'Limited time offer on selected bike models',
+      discountPercent: 15,
+      startDate: new Date('2026-04-01'),
+      endDate: new Date('2026-05-31'),
+      imageUrl: '/images/summer-offer.jpg',
+    },
+  })
+
+  await prisma.offer.create({
+    data: {
+      title: 'Winter Service Package - Free Service',
+      description: 'Get free winter service with bike purchase',
+      discountPercent: 10,
+      startDate: new Date('2026-12-01'),
+      endDate: new Date('2027-02-28'),
+      imageUrl: '/images/winter-offer.jpg',
+    },
+  })
+
+  // Create orders
+  await prisma.order.create({
+    data: {
+      userId: customer1.id,
+      customerName: 'John Doe',
+      email: 'john@example.com',
+      phone: '+977-9841234567',
+      address: 'Kathmandu, Nepal',
+      totalAmount: 45000,
+      status: 'PAID',
+      items: {
+        create: [
+          {
+            partId: 1,
+            partName: 'Oil Filter',
+            quantity: 2,
+            price: 15000,
+          },
+          {
+            partId: 2,
+            partName: 'Air Filter',
+            quantity: 1,
+            price: 15000,
+          },
+        ],
+      },
+    },
+  })
+
+  await prisma.order.create({
+    data: {
+      userId: customer2.id,
+      customerName: 'Jane Smith',
+      email: 'jane@example.com',
+      phone: '+977-9842345678',
+      address: 'Pokhara, Nepal',
+      totalAmount: 85000,
+      status: 'SHIPPED',
+      items: {
+        create: [
+          {
+            partId: 3,
+            partName: 'Brake Pads',
+            quantity: 1,
+            price: 85000,
+          },
+        ],
+      },
+    },
+  })
+
+  await prisma.order.create({
+    data: {
+      userId: customer3.id,
+      customerName: 'Ram Kumar',
+      email: 'ram@example.com',
+      phone: '+977-9843456789',
+      address: 'Lalitpur, Nepal',
+      totalAmount: 32000,
+      status: 'PENDING',
+      items: {
+        create: [
+          {
+            partId: 1,
+            partName: 'Oil Filter',
+            quantity: 1,
+            price: 15000,
+          },
+          {
+            partId: 4,
+            partName: 'Spark Plug',
+            quantity: 1,
+            price: 17000,
+          },
+        ],
+      },
+    },
+  })
+
+  // Create appointments
+  await prisma.appointment.create({
+    data: {
+      clientUsername: 'John Doe',
+      bikeModel: 'Suzuki GSX-R150',
+      vin: 'SUZUKI123456789',
+      bikeYear: 2022,
+      preferredDate: new Date('2026-10-28'),
+      preferredTime: '10:00 AM',
+      customService: 'Regular maintenance and oil change',
+      status: 'APPROVED',
+      mechanicName: 'Rajesh Sharma',
+      estimatedCost: 5000,
+    },
+  })
+
+  await prisma.appointment.create({
+    data: {
+      clientUsername: 'Jane Smith',
+      bikeModel: 'Suzuki Avenis',
+      vin: 'SUZUKI987654321',
+      bikeYear: 2023,
+      preferredDate: new Date('2026-10-30'),
+      preferredTime: '2:00 PM',
+      customService: 'Brake pad replacement and wheel alignment',
+      status: 'PENDING',
+      mechanicName: 'Prakash Singh',
+      estimatedCost: 8000,
+    },
+  })
+
+  await prisma.appointment.create({
+    data: {
+      clientUsername: 'Ram Kumar',
+      bikeModel: 'Suzuki Access 125',
+      vin: 'SUZUKI555555555',
+      bikeYear: 2021,
+      preferredDate: new Date('2026-11-01'),
+      preferredTime: '3:30 PM',
+      customService: 'Engine repair and carburetor cleaning',
+      status: 'IN_PROGRESS',
+      mechanicName: 'Rajesh Sharma',
+      estimatedCost: 12000,
+    },
+  })
+
+  console.log('✅ Seed data created successfully')
+  console.log('Created 3 customers')
+  console.log('Created 3 offers')
+  console.log('Created 3 orders with items')
+  console.log('Created 3 appointments')
 }
 
 main()
   .catch((e) => {
-    console.error("❌ Seeding failed:", e);
-    process.exit(1);
+    console.error('Seed failed:', e)
+    process.exit(1)
   })
   .finally(async () => {
-    await prisma.$disconnect();
-  });
+    await prisma.$disconnect()
+  })
