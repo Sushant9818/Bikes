@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useUser, useClerk } from '@clerk/nextjs'
 import { Menu, X, User as UserIcon, LogOut, Search } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -27,6 +28,8 @@ export default function Navbar() {
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+
+  const role = (user?.publicMetadata?.role as string | undefined) ?? 'CLIENT'
 
   const handleLogout = () => signOut({ redirectUrl: '/' })
 
@@ -86,12 +89,23 @@ export default function Navbar() {
                       <UserIcon className="w-4 h-4 text-white" />
                     </div>
                     <span className="hidden sm:inline font-medium">{user?.username ?? user?.primaryEmailAddress?.emailAddress}</span>
+                    <Badge variant="secondary" className="hidden sm:inline-flex text-xs">{role}</Badge>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem asChild><Link href="/profile">Profile</Link></DropdownMenuItem>
                   <DropdownMenuItem asChild><Link href="/my-orders">My Orders</Link></DropdownMenuItem>
                   <DropdownMenuItem asChild><Link href="/my-appointments">My Appointments</Link></DropdownMenuItem>
+                  {role === 'ADMIN' && (
+                    <>
+                      <DropdownMenuItem asChild><Link href="/bikes">Manage Bikes</Link></DropdownMenuItem>
+                      <DropdownMenuItem asChild><Link href="/parts">Manage Parts</Link></DropdownMenuItem>
+                      <DropdownMenuItem asChild><Link href="/admin/users">Admin Users</Link></DropdownMenuItem>
+                      <DropdownMenuItem asChild><Link href="/admin/orders">Orders</Link></DropdownMenuItem>
+                      <DropdownMenuItem asChild><Link href="/admin/analytics">Analytics</Link></DropdownMenuItem>
+                      <DropdownMenuItem asChild><Link href="/admin/appointments">Appointments</Link></DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="w-4 h-4 mr-2" /> Logout
                   </DropdownMenuItem>
