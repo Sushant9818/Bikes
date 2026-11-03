@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -9,6 +9,8 @@ import PartForm from '@/components/admin/forms/PartForm'
 
 export default function NewPartPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const categoryParam = searchParams.get('category')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -61,7 +63,7 @@ export default function NewPartPage() {
       )}
 
       <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-8">
-        <PartForm onSubmit={handleSubmit} />
+        <PartForm onSubmit={handleSubmit} defaultCategory={categoryParam} />
       </div>
     </div>
   )

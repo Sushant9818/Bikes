@@ -149,7 +149,7 @@ export default function PartsPage() {
             <Wrench className="w-8 h-8 text-[#E60012]" />
             Parts Management
           </h1>
-          <Link href="/admin/parts/new">
+          <Link href={`/admin/parts/new${filterType ? `?category=${filterType}` : ''}`}>
             <Button className="bg-[#E60012] hover:bg-[#E60012]/90 text-white">
               <Plus className="w-4 h-4 mr-2" />
               Add Part
@@ -157,8 +157,51 @@ export default function PartsPage() {
           </Link>
         </div>
 
-        {/* Filters */}
-        <div className="flex gap-4 mb-6">
+        {/* Category Tabs */}
+        <div className="flex gap-2 mb-6 border-b border-zinc-200 dark:border-zinc-800">
+          <button
+            onClick={() => {
+              setFilterType('')
+              setPage(1)
+            }}
+            className={`px-4 py-2 font-medium transition-colors ${
+              filterType === ''
+                ? 'text-[#E60012] border-b-2 border-[#E60012]'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+            }`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => {
+              setFilterType('BIKE_PART')
+              setPage(1)
+            }}
+            className={`px-4 py-2 font-medium transition-colors ${
+              filterType === 'BIKE_PART'
+                ? 'text-[#E60012] border-b-2 border-[#E60012]'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+            }`}
+          >
+            Bike
+          </button>
+          <button
+            onClick={() => {
+              setFilterType('SCOOTER_PART')
+              setPage(1)
+            }}
+            className={`px-4 py-2 font-medium transition-colors ${
+              filterType === 'SCOOTER_PART'
+                ? 'text-[#E60012] border-b-2 border-[#E60012]'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+            }`}
+          >
+            Scooter
+          </button>
+        </div>
+
+        {/* Search Filter */}
+        <div className="mb-6">
           <input
             type="text"
             placeholder="Search by name or SKU..."
@@ -167,20 +210,8 @@ export default function PartsPage() {
               setSearch(e.target.value)
               setPage(1)
             }}
-            className="flex-1 px-4 py-2 border border-zinc-200 rounded-lg dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100"
+            className="w-full px-4 py-2 border border-zinc-200 rounded-lg dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100"
           />
-          <select
-            value={filterType}
-            onChange={(e) => {
-              setFilterType(e.target.value)
-              setPage(1)
-            }}
-            className="px-4 py-2 border border-zinc-200 rounded-lg dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100"
-          >
-            <option value="">All Categories</option>
-            <option value="BIKE_PART">Bike Parts</option>
-            <option value="SCOOTER_PART">Scooter Parts</option>
-          </select>
         </div>
       </div>
 

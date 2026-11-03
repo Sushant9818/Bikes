@@ -22,6 +22,7 @@ interface PartFormProps {
   }
   isLoading?: boolean
   onSubmit: (data: any) => Promise<void>
+  defaultCategory?: string | null
 }
 
 const PART_TYPES = [
@@ -34,9 +35,9 @@ const STATUS_OPTIONS = [
   { value: 'INACTIVE', label: 'Inactive' },
 ]
 
-export default function PartForm({ initialData, isLoading = false, onSubmit }: PartFormProps) {
+export default function PartForm({ initialData, isLoading = false, onSubmit, defaultCategory }: PartFormProps) {
   const [formData, setFormData] = useState({
-    type: initialData?.type || 'BIKE_PART',
+    type: initialData?.type || defaultCategory || 'BIKE_PART',
     partName: initialData?.partName || '',
     sku: initialData?.sku || '',
     compatibleModel: initialData?.compatibleModel || '',
