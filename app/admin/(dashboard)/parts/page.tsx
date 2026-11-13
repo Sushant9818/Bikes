@@ -25,6 +25,7 @@ export default function PartsPage() {
   const router = useRouter()
   const [parts, setParts] = useState<Part[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
   const [page, setPage] = useState(1)
@@ -40,6 +41,7 @@ export default function PartsPage() {
 
   const fetchParts = async () => {
     setLoading(true)
+    setError(null)
     try {
       const params = new URLSearchParams({
         page: String(page),
@@ -54,8 +56,10 @@ export default function PartsPage() {
       const data = await response.json()
       setParts(data.data)
       setTotalPages(data.pagination.totalPages)
-    } catch (error) {
-      console.error('Error fetching parts:', error)
+    } catch (err) {
+      console.error('Error fetching parts:', err)
+      setError('Failed to load parts. Please check your connection and try again.')
+      setParts([])
     } finally {
       setLoading(false)
     }
@@ -214,6 +218,23 @@ export default function PartsPage() {
           />
         </div>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
+          <div className="text-red-600 dark:text-red-400 text-lg mt-0.5">⚠</div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-red-900 dark:text-red-200 mb-1">Error Loading Parts</h3>
+            <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
+          </div>
+          <button
+            onClick={() => fetchParts()}
+            className="text-sm font-medium text-red-600 dark:text-red-400 hover:underline whitespace-nowrap"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Data Table */}
       <DataTable
