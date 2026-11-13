@@ -1,0 +1,507 @@
+cc8f50b feat: add offer detail page with edit form
+ app/admin/(dashboard)/offers/[id]/page.tsx |  93 +++++++++
+ components/admin/OffersTable.tsx           |   7 +-
+ components/admin/forms/OfferForm.tsx       | 314 ++++++++++++++++-------------
+ 3 files changed, 273 insertions(+), 141 deletions(-)
+diff --git a/app/admin/(dashboard)/offers/[id]/page.tsx b/app/admin/(dashboard)/offers/[id]/page.tsx
+new file mode 100644
+index 0000000..deb5b70
+--- /dev/null
++++ b/app/admin/(dashboard)/offers/[id]/page.tsx
+@@ -0,0 +1,93 @@
++import { Suspense } from 'react'
++import { ArrowLeft } from 'lucide-react'
++import Link from 'next/link'
++import { prisma } from '@/lib/prisma'
++import OfferForm from '@/components/admin/forms/OfferForm'
++import { ApiError } from '@/lib/api-error'
++import { Button } from '@/components/ui/button'
++
++type Params = { params: Promise<{ id: string }> }
++
++async function getOffer(id: string) {
++  const offer = await prisma.offer.findUnique({
++    where: { id: Number(id) },
++  })
++  if (!offer) {
++    throw new ApiError(404, 'Offer not found')
++  }
++  return offer
++}
++
++function OfferFormLoader() {
++  return (
++    <div className="flex items-center justify-center py-12">
++      <div className="text-center">
++        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#E60012]" />
++        <p className="mt-4 text-zinc-600 dark:text-zinc-400">Loading offer...</p>
++      </div>
++    </div>
++  )
++}
++
++export default async function EditOfferPage({ params }: Params) {
++  const { id } = await params
++  let offer: any = null
++  let error = null
++
++  try {
++    offer = await getOffer(id)
++  } catch (err) {
++    error = err instanceof ApiError ? err.message : 'Failed to load offer'
++  }
++
++  if (error || !offer) {
++    return (
++      <div className="space-y-6">
++        <Link href="/admin/offers">
++          <Button variant="ghost" className="mb-4">
++            <ArrowLeft className="w-4 h-4 mr-2" />
++            Back to Offers
++          </Button>
++        </Link>
++        <div className="p-6 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
++          <p className="text-sm text-red-700 dark:text-red-400">{error || 'Offer not found'}</p>
++        </div>
++      </div>
++    )
++  }
++
++  const handleSubmit = async (formData: any) => {
++    'use server'
++
++    const response = await fetch(`/api/admin/offers/${id}`, {
++      method: 'PUT',
++      headers: { 'Content-Type': 'application/json' },
++      body: JSON.stringify(formData),
++    })
++
++    if (!response.ok) {
++      throw new Error('Failed to update offer')
++    }
++  }
++
++  return (
++    <div>
++      <div className="mb-8">
++        <Link href="/admin/offers">
++          <Button variant="ghost" className="mb-4">
++            <ArrowLeft className="w-4 h-4 mr-2" />
++            Back to Offers
++          </Button>
++        </Link>
++        <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Edit Offer</h1>
++        <p className="text-zinc-600 dark:text-zinc-400 mt-2">{offer?.title || 'Offer'}</p>
++      </div>
++
++      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-8">
++        <Suspense fallback={<OfferFormLoader />}>
++          <OfferForm initialData={offer} onSubmit={handleSubmit} isEditing />
++        </Suspense>
++      </div>
++    </div>
++  )
++}
+diff --git a/components/admin/OffersTable.tsx b/components/admin/OffersTable.tsx
+index bce67dd..ddd0d29 100644
+--- a/components/admin/OffersTable.tsx
++++ b/components/admin/OffersTable.tsx
+@@ -83,23 +83,26 @@ export function OffersTable() {
+         header: 'Start Date',
+         cell: (info) => new Date(info.getValue()).toLocaleDateString(),
+       }),
+       columnHelper.accessor('endDate', {
+         header: 'End Date',
+         cell: (info) => new Date(info.getValue()).toLocaleDateString(),
+       }),
+       columnHelper.display({
+         id: 'actions',
+         header: 'Actions',
+-        cell: () => (
++        cell: ({ row }) => (
+           <div className="flex gap-2">
+-            <button className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded">
++            <button
++              onClick={() => window.location.href = `/admin/offers/${row.original.id}`}
++              className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
++            >
+               <Edit2 className="w-4 h-4" />
+             </button>
+             <button className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded">
+               <Trash2 className="w-4 h-4" />
+             </button>
+           </div>
+         ),
+       }),
+     ],
+     []
+diff --git a/components/admin/forms/OfferForm.tsx b/components/admin/forms/OfferForm.tsx
+index 580587a..ec049ec 100644
+--- a/components/admin/forms/OfferForm.tsx
++++ b/components/admin/forms/OfferForm.tsx
+@@ -1,190 +1,226 @@
+ 'use client'
+ 
+ import { useState } from 'react'
+ import { useRouter } from 'next/navigation'
+-import { useForm } from 'react-hook-form'
+-import { zodResolver } from '@hookform/resolvers/zod'
+-import { offerInputSchema, type OfferInput } from '@/lib/validations/offer'
+ import { Button } from '@/components/ui/button'
++import { Input } from '@/components/ui/input'
++import { Label } from '@/components/ui/label'
++import { Textarea } from '@/components/ui/textarea'
++import LoadingSpinner from '@/components/LoadingSpinner'
++
++interface OfferFormProps {
++  initialData?: {
++    id: number
++    title: string
++    description: string | null
++    discountPercent: number | null
++    startDate: Date | string | null
++    endDate: Date | string | null
++    imageUrl: string | null
++  }
++  isLoading?: boolean
++  onSubmit?: (data: any) => Promise<void>
++  isEditing?: boolean
++}
+ 
+-export default function OfferForm() {
++export default function OfferForm({ initialData, isLoading = false, onSubmit, isEditing = false }: OfferFormProps) {
+   const router = useRouter()
++  const [formData, setFormData] = useState({
++    title: initialData?.title || '',
++    description: initialData?.description || '',
++    discountPercent: initialData?.discountPercent ?? 0,
++    startDate: initialData?.startDate
++      ? (typeof initialData.startDate === 'string'
++        ? initialData.startDate.split('T')[0]
++        : initialData.startDate.toISOString().split('T')[0])
++      : '',
++    endDate: initialData?.endDate
++      ? (typeof initialData.endDate === 'string'
++        ? initialData.endDate.split('T')[0]
++        : initialData.endDate.toISOString().split('T')[0])
++      : '',
++    imageUrl: initialData?.imageUrl || '',
++  })
++
++  const [errors, setErrors] = useState<Record<string, string>>({})
+   const [submitting, setSubmitting] = useState(false)
+   const [error, setError] = useState('')
+ 
+-  const { register, handleSubmit, formState: { errors } } = useForm<OfferInput>({
+-    resolver: zodResolver(offerInputSchema),
+-    defaultValues: {
+-      title: '',
+-      description: '',
+-      discountPercent: 10,
+-      startDate: new Date().toISOString().split('T')[0],
+-      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+-      imageUrl: '',
+-    },
+-  })
++  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
++    const { name, value } = e.target
++    setFormData((prev) => ({
++      ...prev,
++      [name]: name === 'discountPercent' ? Number(value) : value,
++    }))
++    if (errors[name]) {
++      setErrors((prev) => ({ ...prev, [name]: '' }))
++    }
++  }
+ 
+-  const onSubmit = async (data: OfferInput) => {
+-    try {
+-      setSubmitting(true)
+-      setError('')
++  const validateForm = () => {
++    const newErrors: Record<string, string> = {}
+ 
+-      // Validate title is not empty
+-      if (!data.title?.trim()) {
+-        throw new Error('Title is required')
+-      }
++    if (!formData.title.trim()) newErrors.title = 'Title is required'
++    if (formData.discountPercent < 0 || formData.discountPercent > 100) newErrors.discountPercent = 'Discount must be 0-100%'
++    if (!formData.startDate) newErrors.startDate = 'Start date is required'
++    if (!formData.endDate) newErrors.endDate = 'End date is required'
++    if (new Date(formData.startDate) >= new Date(formData.endDate)) {
++      newErrors.endDate = 'End date must be after start date'
++    }
+ 
+-      // Convert date strings to ISO datetime format and remove empty/placeholder imageUrl
+-      let imageUrl = (data.imageUrl || '').trim()
+-      if (!imageUrl || imageUrl === 'https://example.com/image.jpg') {
+-        imageUrl = null
+-      }
++    setErrors(newErrors)
++    return Object.keys(newErrors).length === 0
++  }
+ 
+-      const payload = {
+-        ...data,
+-        title: data.title.trim(),
+-        startDate: `${data.startDate}T00:00:00Z`,
+-        endDate: `${data.endDate}T00:00:00Z`,
+-        imageUrl: imageUrl,
+-      }
++  const handleSubmit = async (e: React.FormEvent) => {
++    e.preventDefault()
+ 
+-      const res = await fetch('/api/admin/offers', {
+-        method: 'POST',
+-        headers: { 'Content-Type': 'application/json' },
+-        body: JSON.stringify(payload),
+-      })
++    if (!validateForm()) return
+ 
+-      if (!res.ok) {
+-        const errorData = await res.json()
+-        throw new Error(errorData.error || 'Failed to create offer')
++    setSubmitting(true)
++    setError('')
++    try {
++      const payload = {
++        title: formData.title.trim(),
++        description: formData.description?.trim() || null,
++        discountPercent: formData.discountPercent,
++        startDate: `${formData.startDate}T00:00:00Z`,
++        endDate: `${formData.endDate}T00:00:00Z`,
++        imageUrl: formData.imageUrl || null,
+       }
+ 
+-      router.push('/admin/offers')
+-      router.refresh()
++      if (onSubmit) {
++        await onSubmit(payload)
++      } else {
++        // Default behavior for creating new offers
++        const method = isEditing ? 'PUT' : 'POST'
++        const url = isEditing ? `/api/admin/offers/${initialData?.id}` : '/api/admin/offers'
++
++        const response = await fetch(url, {
++          method,
++          headers: { 'Content-Type': 'application/json' },
++          body: JSON.stringify(payload),
++        })
++
++        if (!response.ok) {
++          const errorData = await response.json().catch(() => ({}))
++          throw new Error(errorData.error || `Failed to ${isEditing ? 'update' : 'create'} offer`)
++        }
++
++        router.push('/admin/offers')
++        router.refresh()
++      }
+     } catch (err) {
+       setError(err instanceof Error ? err.message : 'Something went wrong')
+     } finally {
+       setSubmitting(false)
+     }
+   }
+ 
++  if (isLoading) {
++    return (
++      <div className="flex items-center justify-center py-12">
++        <LoadingSpinner />
++      </div>
++    )
++  }
++
+   return (
+-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
++    <form onSubmit={handleSubmit} className="space-y-6">
+       {error && (
+-        <div className="p-3 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 rounded text-sm">
+-          {error}
++        <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
++          <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+         </div>
+       )}
++      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
++        <div className="md:col-span-2">
++          <Label htmlFor="title">Title *</Label>
++          <Input
++            id="title"
++            name="title"
++            value={formData.title}
++            onChange={handleChange}
++            placeholder="Enter offer title"
++            className={errors.title ? 'border-red-500' : ''}
++          />
++          {errors.title && <p className="text-sm text-red-500 mt-1">{errors.title}</p>}
++        </div>
+ 
+-      <div>
+-        <label className="block text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-2">
+-          Title *
+-        </label>
+-        <input
+-          type="text"
+-          placeholder="Summer Sale"
+-          className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#E60012]"
+-          {...register('title')}
+-          disabled={submitting}
+-        />
+-        {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>}
+-        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Max 100 characters</p>
+-      </div>
+-
+-      <div>
+-        <label className="block text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-2">
+-          Description
+-        </label>
+-        <textarea
+-          placeholder="Describe the offer..."
+-          rows={4}
+-          className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#E60012] resize-none"
+-          {...register('description')}
+-          disabled={submitting}
+-        />
+-        {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>}
+-        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Max 500 characters</p>
+-      </div>
+-
+-      <div>
+-        <label className="block text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-2">
+-          Discount Percentage *
+-        </label>
+-        <div className="flex items-center gap-2">
+-          <input
++        <div>
++          <Label htmlFor="discountPercent">Discount % *</Label>
++          <Input
++            id="discountPercent"
++            name="discountPercent"
+             type="number"
+             min="0"
+             max="100"
+-            className="flex-1 px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#E60012]"
+-            {...register('discountPercent', { valueAsNumber: true })}
+-            disabled={submitting}
++            value={formData.discountPercent}
++            onChange={handleChange}
++            className={errors.discountPercent ? 'border-red-500' : ''}
+           />
+-          <span className="text-zinc-900 dark:text-zinc-100">%</span>
++          {errors.discountPercent && <p className="text-sm text-red-500 mt-1">{errors.discountPercent}</p>}
+         </div>
+-        {errors.discountPercent && <p className="text-red-500 text-sm mt-1">{errors.discountPercent.message}</p>}
+-        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">0-100%</p>
+-      </div>
+ 
+-      <div>
+-        <label className="block text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-2">
+-          Start Date *
+-        </label>
+-        <input
+-          type="date"
+-          className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#E60012]"
+-          {...register('startDate')}
+-          disabled={submitting}
+-        />
+-        {errors.startDate && <p className="text-red-500 text-sm mt-1">{errors.startDate.message}</p>}
+-        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">When offer starts</p>
+-      </div>
++        <div>
++          <Label htmlFor="imageUrl">Image URL</Label>
++          <Input
++            id="imageUrl"
++            name="imageUrl"
++            type="text"
++            value={formData.imageUrl}
++            onChange={handleChange}
++            placeholder="https://example.com/image.jpg"
++          />
++        </div>
+ 
+-      <div>
+-        <label className="block text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-2">
+-          End Date *
+-        </label>
+-        <input
+-          type="date"
+-          className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#E60012]"
+-          {...register('endDate')}
+-          disabled={submitting}
+-        />
+-        {errors.endDate && <p className="text-red-500 text-sm mt-1">{errors.endDate.message}</p>}
+-        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">When offer ends (must be after start date)</p>
++        <div>
++          <Label htmlFor="startDate">Start Date *</Label>
++          <Input
++            id="startDate"
++            name="startDate"
++            type="date"
++            value={formData.startDate}
++            onChange={handleChange}
++            className={errors.startDate ? 'border-red-500' : ''}
++          />
++          {errors.startDate && <p className="text-sm text-red-500 mt-1">{errors.startDate}</p>}
++        </div>
++
++        <div>
++          <Label htmlFor="endDate">End Date *</Label>
++          <Input
++            id="endDate"
++            name="endDate"
++            type="date"
++            value={formData.endDate}
++            onChange={handleChange}
++            className={errors.endDate ? 'border-red-500' : ''}
++          />
++          {errors.endDate && <p className="text-sm text-red-500 mt-1">{errors.endDate}</p>}
++        </div>
+       </div>
+ 
+-      <div>
+-        <label className="block text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-2">
+-          Image URL
+-        </label>
+-        <input
+-          type="text"
+-          placeholder="https://example.com/image.jpg"
+-          className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#E60012]"
+-          {...register('imageUrl')}
+-          disabled={submitting}
++      <div className="md:col-span-2">
++        <Label htmlFor="description">Description</Label>
++        <Textarea
++          id="description"
++          name="description"
++          value={formData.description}
++          onChange={handleChange}
++          placeholder="Enter offer description"
++          rows={4}
+         />
+-        {errors.imageUrl && <p className="text-red-500 text-sm mt-1">{errors.imageUrl.message}</p>}
+-        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Optional offer image</p>
+       </div>
+ 
+-      <div className="flex gap-3 pt-6">
++      <div className="flex gap-4 pt-6">
+         <Button
+           type="submit"
+           disabled={submitting}
+-          className="bg-[#E60012] hover:bg-[#C5000F] text-white"
+-        >
+-          {submitting ? 'Creating...' : 'Create Offer'}
+-        </Button>
+-        <Button
+-          type="button"
+-          variant="outline"
+-          onClick={() => router.back()}
+-          disabled={submitting}
++          className="bg-[#E60012] hover:bg-[#E60012]/90 text-white"
+         >
+-          Cancel
++          {submitting ? 'Saving...' : (isEditing ? 'Update Offer' : 'Create Offer')}
+         </Button>
+       </div>
+     </form>
+   )
+ }

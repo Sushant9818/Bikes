@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import {
   useReactTable,
@@ -26,6 +27,7 @@ interface OfferWithStatus extends Offer {
 }
 
 export function OffersTable() {
+  const router = useRouter()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
@@ -93,7 +95,7 @@ export function OffersTable() {
         cell: ({ row }) => (
           <div className="flex gap-2">
             <button
-              onClick={() => window.location.href = `/admin/offers/${row.original.id}`}
+              onClick={() => router.push(`/admin/offers/${row.original.id}`)}
               className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
             >
               <Edit2 className="w-4 h-4" />
