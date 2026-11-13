@@ -1,9 +1,7 @@
-'use client'
-
-import { useState } from 'react'
+import { Suspense } from 'react'
 import { ArrowLeft, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { prisma } from '@/lib/prisma'
 import OfferForm from '@/components/admin/forms/OfferForm'
 import { Button } from '@/components/ui/button'
 import type { OfferInput } from '@/lib/validations/offer'
@@ -21,13 +19,24 @@ interface OfferData {
 }
 
 async function getOffer(id: string): Promise<OfferData> {
-  const response = await fetch(`/api/admin/offers/${id}`, {
-    cache: 'no-store',
+  const offer = await prisma.offer.findUnique({
+    where: { id: Number(id) },
   })
-  if (!response.ok) {
-    throw new Error('Failed to load offer')
+  if (!offer) {
+    throw new Error('Offer not found')
   }
-  return response.json()
+  return offer
+}
+
+function OfferFormLoader() {
+  return (
+    <div className="flex items-center justify-center py-12">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#E60012]" />
+        <p className="mt-4 text-zinc-600 dark:text-zinc-400">Loading offer...</p>
+      </div>
+    </div>
+  )
 }
 
 export default async function EditOfferPage({ params }: Params) {
@@ -42,10 +51,27 @@ export default async function EditOfferPage({ params }: Params) {
   }
 
   if (error || !offer) {
-    return <ErrorState error={error || 'Offer not found'} />
+    return (
+      <div className="space-y-6">
+        <Link href="/admin/offers">
+          <Button variant="ghost" className="mb-4">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Offers
+          </Button>
+        </Link>
+        <div className="p-6 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm text-red-700 dark:text-red-400">{error || 'Offer not found'}</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const handleSubmit = async (formData: OfferInput) => {
+    'use server'
+
     const response = await fetch(`/api/admin/offers/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -78,42 +104,9 @@ export default async function EditOfferPage({ params }: Params) {
       </div>
 
       <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-8">
-        <OfferForm initialData={offer} onSubmit={handleSubmit} isEditing />
-      </div>
-    </div>
-  )
-}
-
-function ErrorState({ error }: { error: string }) {
-  const router = useRouter()
-  const [isRetrying, setIsRetrying] = useState(false)
-
-  const handleRetry = async () => {
-    setIsRetrying(true)
-    // Reload the page to retry fetching
-    router.refresh()
-  }
-
-  return (
-    <div className="space-y-6">
-      <Link href="/admin/offers">
-        <Button variant="ghost" className="mb-4">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Offers
-        </Button>
-      </Link>
-      <div className="p-6 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
-        <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-        <div className="flex-1">
-          <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
-        </div>
-        <button
-          onClick={handleRetry}
-          disabled={isRetrying}
-          className="text-sm font-medium text-red-600 dark:text-red-400 hover:underline whitespace-nowrap disabled:opacity-50"
-        >
-          {isRetrying ? 'Retrying...' : 'Retry'}
-        </button>
+        <Suspense fallback={<OfferFormLoader />}>
+          <OfferForm initialData={offer} onSubmit={handleSubmit} isEditing />
+        </Suspense>
       </div>
     </div>
   )
