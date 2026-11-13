@@ -34,10 +34,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     return NextResponse.json({
       id: user.id,
-      name: user.name,
+      name: user.fullName,
       email: user.email,
       phone: user.phoneNumber,
-      address: user.address,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       stats: {
@@ -66,10 +65,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const user = await prisma.user.update({
       where: { id: parseInt(id) },
       data: {
-        ...(validated.name && { name: validated.name }),
+        ...(validated.name && { fullName: validated.name }),
         ...(validated.email && { email: validated.email }),
         ...(validated.phone !== undefined && { phoneNumber: validated.phone }),
-        ...(validated.address !== undefined && { address: validated.address }),
       },
     })
 

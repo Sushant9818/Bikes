@@ -121,10 +121,11 @@ export default function PartsPage() {
       key: 'quantity',
       label: 'Stock',
       render: (value: unknown, row: Part) => {
-        const isLow = (value as number) <= row.minStock
+        const numValue = value as number
+        const isLow = numValue <= row.minStock
         return (
           <span className="inline-flex items-center gap-2">
-            {value}
+            {String(numValue)}
             {isLow && <Badge variant="destructive">Low</Badge>}
           </span>
         )
@@ -137,11 +138,14 @@ export default function PartsPage() {
     {
       key: 'status',
       label: 'Status',
-      render: (value: unknown) => (
-        <Badge variant={value === 'ACTIVE' ? 'default' : 'secondary'}>
-          {value}
-        </Badge>
-      ),
+      render: (value: unknown) => {
+        const statusValue = String(value)
+        return (
+          <Badge variant={statusValue === 'ACTIVE' ? 'default' : 'secondary'}>
+            {statusValue}
+          </Badge>
+        )
+      },
     },
   ]
 
