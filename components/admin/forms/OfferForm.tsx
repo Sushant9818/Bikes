@@ -29,10 +29,29 @@ export default function OfferForm() {
       setSubmitting(true)
       setError('')
 
+      // Validate title is not empty
+      if (!data.title?.trim()) {
+        throw new Error('Title is required')
+      }
+
+      // Convert date strings to ISO datetime format and remove empty/placeholder imageUrl
+      let imageUrl = (data.imageUrl || '').trim()
+      if (!imageUrl || imageUrl === 'https://example.com/image.jpg') {
+        imageUrl = null
+      }
+
+      const payload = {
+        ...data,
+        title: data.title.trim(),
+        startDate: `${data.startDate}T00:00:00Z`,
+        endDate: `${data.endDate}T00:00:00Z`,
+        imageUrl: imageUrl,
+      }
+
       const res = await fetch('/api/admin/offers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       })
 
       if (!res.ok) {
@@ -139,7 +158,7 @@ export default function OfferForm() {
           Image URL
         </label>
         <input
-          type="url"
+          type="text"
           placeholder="https://example.com/image.jpg"
           className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#E60012]"
           {...register('imageUrl')}

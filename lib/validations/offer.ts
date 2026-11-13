@@ -6,7 +6,7 @@ const baseOfferSchema = z.object({
   discountPercent: z.number().min(0, 'Min 0%').max(100, 'Max 100%'),
   startDate: z.string(),
   endDate: z.string(),
-  imageUrl: z.string().url('Invalid URL').optional().nullable(),
+  imageUrl: z.string().optional().nullable(),
 })
 
 export const offerInputSchema = baseOfferSchema.refine(data => new Date(data.endDate) > new Date(data.startDate), {

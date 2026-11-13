@@ -84,21 +84,50 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
+    console.log('[Offer API] Received body:', JSON.stringify(body, null, 2))
+
     const validated = offerInputSchema.parse(body)
+    console.log('[Offer API] Validation passed:', JSON.stringify(validated, null, 2))
+
+    // Extract just the date part (YYYY-MM-DD) for @db.Date fields
+    const parseDate = (dateStr: string) => {
+      if (!dateStr) return null
+      const date = new Date(dateStr)
+      console.log(`[Offer API] Parsed date "${dateStr}" to:`, date)
+      return date
+    }
+
+    const startDate = parseDate(validated.startDate)
+    const endDate = parseDate(validated.endDate)
+
+    console.log('[Offer API] About to create offer with data:', {
+      title: validated.title.trim(),
+      description: validated.description?.trim() || null,
+      discountPercent: validated.discountPercent,
+      startDate,
+      endDate,
+      imageUrl: validated.imageUrl || null,
+    })
 
     const offer = await prisma.offer.create({
       data: {
-        title: validated.title,
-        description: validated.description,
+        title: validated.title.trim(),
+        description: validated.description?.trim() || null,
         discountPercent: validated.discountPercent,
-        startDate: new Date(validated.startDate),
-        endDate: new Date(validated.endDate),
-        imageUrl: validated.imageUrl,
+        startDate,
+        endDate,
+        imageUrl: validated.imageUrl || null,
       },
     })
 
+    console.log('[Offer API] Successfully created offer:', offer)
     return NextResponse.json(offer, { status: 201 })
   } catch (err) {
+    console.error('[Offer API] Error:', err)
+    if (err instanceof Error) {
+      console.error('[Offer API] Error message:', err.message)
+      console.error('[Offer API] Error stack:', err.stack)
+    }
     return handleApiError(err)
   }
 }
