@@ -17,7 +17,7 @@ async function getBikes() {
 }
 
 export default async function BikesPage() {
-  let bikes
+  let bikes: any[] = []
   let error: string | null = null
 
   try {
