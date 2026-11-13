@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { LayoutDashboard, AlertCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import DashboardCards from '@/components/admin/DashboardCards'
 import RevenueChart from '@/components/admin/RevenueChart'
 import CategoryPieChart from '@/components/admin/CategoryPieChart'
@@ -43,22 +44,24 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const response = await fetch('/api/admin/dashboard', {
-          credentials: 'include',
-        })
-        if (!response.ok) throw new Error('Failed to fetch dashboard data')
-        const result = await response.json()
-        setData(result)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred')
-      } finally {
-        setLoading(false)
-      }
+  const fetchDashboardData = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await fetch('/api/admin/dashboard', {
+        credentials: 'include',
+      })
+      if (!response.ok) throw new Error('Failed to fetch dashboard data')
+      const result = await response.json()
+      setData(result)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchDashboardData()
   }, [])
 
@@ -78,7 +81,13 @@ export default function AdminDashboard() {
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-zinc-600 dark:text-zinc-400">{error || 'Failed to load dashboard'}</p>
+          <p className="text-zinc-600 dark:text-zinc-400 mb-6">{error || 'Failed to load dashboard'}</p>
+          <Button
+            onClick={fetchDashboardData}
+            className="bg-[#E60012] hover:bg-[#E60012]/90 text-white"
+          >
+            Retry
+          </Button>
         </div>
       </div>
     )
