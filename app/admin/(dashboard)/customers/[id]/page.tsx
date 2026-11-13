@@ -13,6 +13,7 @@ interface Customer {
   fullName: string | null
   email: string
   phoneNumber: string | null
+  role: string
   createdAt: Date
   orders: Array<{
     id: number
@@ -95,6 +96,7 @@ export default async function CustomerDetailPage({ params }: Params) {
           name={customer!.fullName}
           email={customer!.email}
           phone={customer!.phoneNumber}
+          role={customer!.role}
           createdAt={customer!.createdAt}
           stats={{
             totalOrders,

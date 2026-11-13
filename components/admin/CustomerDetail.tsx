@@ -12,6 +12,7 @@ interface CustomerDetailProps {
   name: string | null
   email: string
   phone: string | null
+  role: string
   createdAt: Date
   stats: {
     totalOrders: number
@@ -21,7 +22,7 @@ interface CustomerDetailProps {
   }
 }
 
-export default function CustomerDetail({ id, name, email, phone, createdAt, stats }: CustomerDetailProps) {
+export default function CustomerDetail({ id, name, email, phone, role, createdAt, stats }: CustomerDetailProps) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({
@@ -196,7 +197,7 @@ export default function CustomerDetail({ id, name, email, phone, createdAt, stat
           {/* Account Information */}
           <div className="border-t border-zinc-200 dark:border-zinc-800 pt-6">
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Account Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <p className="text-sm text-zinc-600 dark:text-zinc-400">Customer ID</p>
                 <p className="text-lg font-medium text-zinc-900 dark:text-zinc-100">#{id}</p>
@@ -206,6 +207,10 @@ export default function CustomerDetail({ id, name, email, phone, createdAt, stat
                 <p className="text-lg font-medium text-zinc-900 dark:text-zinc-100">
                   {new Date(createdAt).toLocaleDateString()}
                 </p>
+              </div>
+              <div>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">Role</p>
+                <p className="text-lg font-medium text-zinc-900 dark:text-zinc-100">{role}</p>
               </div>
             </div>
           </div>
