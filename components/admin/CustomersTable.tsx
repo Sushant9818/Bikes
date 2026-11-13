@@ -11,7 +11,7 @@ import {
 } from '@tanstack/react-table'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Trash2, Eye } from 'lucide-react'
+import { AlertCircle, Trash2, Eye } from 'lucide-react'
 
 interface Customer {
   id: number
@@ -30,7 +30,7 @@ export function CustomersTable() {
   const [search, setSearch] = useState('')
   const pageSize = 10
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['customers', page, search],
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -94,6 +94,25 @@ export function CustomersTable() {
   })
 
   if (isLoading) return <div className="text-center py-10">Loading customers...</div>
+
+  if (error) {
+    return (
+      <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
+        <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+        <div className="flex-1">
+          <h3 className="font-semibold text-red-900 dark:text-red-200 mb-1">Error Loading Data</h3>
+          <p className="text-sm text-red-800 dark:text-red-300">Failed to load data. Please try again.</p>
+        </div>
+        <button
+          onClick={() => refetch()}
+          className="text-sm font-medium text-red-600 dark:text-red-400 hover:underline whitespace-nowrap"
+        >
+          Retry
+        </button>
+      </div>
+    )
+  }
+
 
   return (
     <div className="space-y-4">
