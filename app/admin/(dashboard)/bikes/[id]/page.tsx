@@ -30,7 +30,7 @@ function BikeFormLoader() {
 
 export default async function EditBikePage({ params }: Params) {
   const { id } = await params
-  let bike = null
+  let bike: any = undefined
   let error = null
 
   try {
