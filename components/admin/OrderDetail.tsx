@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { AlertCircle, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -26,6 +27,7 @@ const statusColors: Record<string, string> = {
 const statusOptions = ['PENDING', 'PAID', 'SHIPPED', 'CANCELLED']
 
 export default function OrderDetail({ order }: OrderDetailProps) {
+  const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [selectedStatus, setSelectedStatus] = useState(order.status)
   const [error, setError] = useState('')
@@ -48,7 +50,7 @@ export default function OrderDetail({ order }: OrderDetailProps) {
       }
 
       setIsEditing(false)
-      window.location.reload()
+      router.refresh()
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to update status'
       setError(errorMsg)
@@ -63,6 +65,10 @@ export default function OrderDetail({ order }: OrderDetailProps) {
     setError('')
   }
 
+  const handleRetry = () => {
+    setError('')
+  }
+
   return (
     <div className="space-y-4">
       {error && (
@@ -71,6 +77,14 @@ export default function OrderDetail({ order }: OrderDetailProps) {
           <div className="flex-1">
             <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRetry}
+            className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 border-red-200 dark:border-red-800 whitespace-nowrap"
+          >
+            Retry
+          </Button>
         </div>
       )}
 
