@@ -1,0 +1,682 @@
+e59beb0 feat: add customer detail page with inline contact editing
+ app/admin/(dashboard)/customers/[id]/page.tsx | 109 ++++++++++++
+ app/admin/(dashboard)/parts/page.tsx          |  18 +-
+ app/api/admin/customers/[id]/route.ts         |   6 +-
+ app/api/admin/customers/route.ts              |   4 +-
+ components/admin/CustomerDetail.tsx           | 241 ++++++++++++++++++++++++++
+ components/admin/CustomerErrorUI.tsx          |  53 ++++++
+ components/admin/CustomersTable.tsx           |  29 ++--
+ 7 files changed, 437 insertions(+), 23 deletions(-)
+diff --git a/app/admin/(dashboard)/customers/[id]/page.tsx b/app/admin/(dashboard)/customers/[id]/page.tsx
+new file mode 100644
+index 0000000..d815864
+--- /dev/null
++++ b/app/admin/(dashboard)/customers/[id]/page.tsx
+@@ -0,0 +1,109 @@
++import { Suspense } from 'react'
++import { ArrowLeft } from 'lucide-react'
++import Link from 'next/link'
++import { prisma } from '@/lib/prisma'
++import CustomerDetail from '@/components/admin/CustomerDetail'
++import { ApiError } from '@/lib/api-error'
++import CustomerErrorUI from '@/components/admin/CustomerErrorUI'
++
++type Params = { params: Promise<{ id: string }> }
++
++interface Customer {
++  id: number
++  fullName: string | null
++  email: string
++  phoneNumber: string | null
++  createdAt: Date
++  orders: Array<{
++    id: number
++    status: string
++    totalAmount: number
++    createdAt: Date
++  }>
++}
++
++async function getCustomer(id: string): Promise<Customer> {
++  const user = await prisma.user.findUnique({
++    where: { id: Number(id) },
++    include: {
++      orders: {
++        orderBy: { createdAt: 'desc' },
++      },
++    },
++  })
++  if (!user) {
++    throw new ApiError(404, 'Customer not found')
++  }
++  return user as Customer
++}
++
++function CustomerDetailLoader() {
++  return (
++    <div className="flex items-center justify-center py-12">
++      <div className="text-center">
++        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#E60012]" />
++        <p className="mt-4 text-zinc-600 dark:text-zinc-400">Loading customer...</p>
++      </div>
++    </div>
++  )
++}
++
++export default async function CustomerDetailPage({ params }: Params) {
++  const { id } = await params
++  let customer: Customer | null = null
++  let error: string | null = null
++
++  try {
++    customer = await getCustomer(id)
++  } catch (err) {
++    error = err instanceof ApiError ? err.message : 'Failed to load customer'
++  }
++
++  if (error) {
++    return <CustomerErrorUI error={error} customerId={id} />
++  }
++
++  // Calculate stats from paid orders only
++  const paidOrders = customer!.orders.filter((o) => o.status === 'PAID')
++  const totalOrders = paidOrders.length
++  const totalSpent = paidOrders.reduce((sum, o) => sum + o.totalAmount, 0)
++  const avgOrderValue = totalOrders > 0 ? totalSpent / totalOrders : 0
++  const lastOrderDate = paidOrders.length > 0 ? paidOrders[0].createdAt : null
++
++  return (
++    <div className="space-y-8">
++      {/* Header */}
++      <div className="flex items-center justify-between">
++        <div className="flex items-center gap-3">
++          <Link
++            href="/admin/customers"
++            className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
++          >
++            <ArrowLeft className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
++          </Link>
++          <div>
++            <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Customer Details</h1>
++            <p className="text-zinc-600 dark:text-zinc-400 mt-2">{customer?.fullName || 'Customer'} - {customer?.email}</p>
++          </div>
++        </div>
++      </div>
++
++      {/* Detail Content */}
++      <Suspense fallback={<CustomerDetailLoader />}>
++        <CustomerDetail
++          id={customer!.id}
++          name={customer!.fullName}
++          email={customer!.email}
++          phone={customer!.phoneNumber}
++          createdAt={customer!.createdAt}
++          stats={{
++            totalOrders,
++            totalSpent,
++            avgOrderValue,
++            lastOrderDate,
++          }}
++        />
++      </Suspense>
++    </div>
++  )
++}
+diff --git a/app/admin/(dashboard)/parts/page.tsx b/app/admin/(dashboard)/parts/page.tsx
+index 5eba443..31044bd 100644
+--- a/app/admin/(dashboard)/parts/page.tsx
++++ b/app/admin/(dashboard)/parts/page.tsx
+@@ -114,41 +114,45 @@ export default function PartsPage() {
+     },
+     {
+       key: 'price',
+       label: 'Price',
+       render: (value: unknown) => `Rs. ${Number(value).toFixed(2)}`,
+     },
+     {
+       key: 'quantity',
+       label: 'Stock',
+       render: (value: unknown, row: Part) => {
+-        const isLow = (value as number) <= row.minStock
++        const numValue = value as number
++        const isLow = numValue <= row.minStock
+         return (
+           <span className="inline-flex items-center gap-2">
+-            {value}
++            {String(numValue)}
+             {isLow && <Badge variant="destructive">Low</Badge>}
+           </span>
+         )
+       },
+     },
+     {
+       key: 'minStock',
+       label: 'Min Stock',
+     },
+     {
+       key: 'status',
+       label: 'Status',
+-      render: (value: unknown) => (
+-        <Badge variant={value === 'ACTIVE' ? 'default' : 'secondary'}>
+-          {value}
+-        </Badge>
+-      ),
++      render: (value: unknown) => {
++        const statusValue = String(value)
++        return (
++          <Badge variant={statusValue === 'ACTIVE' ? 'default' : 'secondary'}>
++            {statusValue}
++          </Badge>
++        )
++      },
+     },
+   ]
+ 
+   return (
+     <div>
+       <div className="mb-8">
+         <div className="flex items-center justify-between mb-6">
+           <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-3">
+             <Wrench className="w-8 h-8 text-[#E60012]" />
+             Parts Management
+diff --git a/app/api/admin/customers/[id]/route.ts b/app/api/admin/customers/[id]/route.ts
+index 8f06d66..9b19dee 100644
+--- a/app/api/admin/customers/[id]/route.ts
++++ b/app/api/admin/customers/[id]/route.ts
+@@ -27,24 +27,23 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id:
+ 
+     // Calculate stats from paid orders only
+     const paidOrders = user.orders.filter(o => o.status === 'PAID')
+     const totalOrders = paidOrders.length
+     const totalSpent = paidOrders.reduce((sum, o) => sum + o.totalAmount, 0)
+     const avgOrderValue = totalOrders > 0 ? totalSpent / totalOrders : 0
+     const lastOrderDate = paidOrders.length > 0 ? paidOrders[0].createdAt : null
+ 
+     return NextResponse.json({
+       id: user.id,
+-      name: user.name,
++      name: user.fullName,
+       email: user.email,
+       phone: user.phoneNumber,
+-      address: user.address,
+       createdAt: user.createdAt,
+       updatedAt: user.updatedAt,
+       stats: {
+         totalOrders,
+         totalSpent,
+         avgOrderValue,
+         lastOrderDate,
+       },
+       orders: user.orders,
+     })
+@@ -59,24 +58,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
+       await requireAdmin()
+     }
+ 
+     const { id } = await params
+     const body = await req.json()
+     const validated = customerUpdateSchema.parse(body)
+ 
+     const user = await prisma.user.update({
+       where: { id: parseInt(id) },
+       data: {
+-        ...(validated.name && { name: validated.name }),
++        ...(validated.name && { fullName: validated.name }),
+         ...(validated.email && { email: validated.email }),
+         ...(validated.phone !== undefined && { phoneNumber: validated.phone }),
+-        ...(validated.address !== undefined && { address: validated.address }),
+       },
+     })
+ 
+     return NextResponse.json(user)
+   } catch (err) {
+     return handleApiError(err)
+   }
+ }
+ 
+ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+diff --git a/app/api/admin/customers/route.ts b/app/api/admin/customers/route.ts
+index efe8364..81e1a88 100644
+--- a/app/api/admin/customers/route.ts
++++ b/app/api/admin/customers/route.ts
+@@ -19,21 +19,21 @@ export async function GET(req: NextRequest) {
+     const maxOrders = parseInt(searchParams.get('maxOrders') || '9999')
+     const minSpent = parseFloat(searchParams.get('minSpent') || '0')
+     const maxSpent = parseFloat(searchParams.get('maxSpent') || '999999')
+ 
+     const skip = (page - 1) * pageSize
+ 
+     const where: any = {}
+ 
+     if (search) {
+       where.OR = [
+-        { name: { contains: search, mode: 'insensitive' } },
++        { fullName: { contains: search, mode: 'insensitive' } },
+         { email: { contains: search, mode: 'insensitive' } },
+         { phoneNumber: { contains: search, mode: 'insensitive' } },
+       ]
+     }
+ 
+     if (startDate) {
+       where.createdAt = { gte: new Date(startDate) }
+     }
+ 
+     if (endDate) {
+@@ -55,21 +55,21 @@ export async function GET(req: NextRequest) {
+ 
+     // Calculate stats for each customer
+     const customersWithStats = users.map(user => {
+       const totalOrders = user.orders.length
+       const totalSpent = user.orders.reduce((sum, o) => sum + o.totalAmount, 0)
+       const avgOrderValue = totalOrders > 0 ? totalSpent / totalOrders : 0
+       const lastOrderDate = user.orders.length > 0 ? user.orders[user.orders.length - 1].createdAt : null
+ 
+       return {
+         id: user.id,
+-        name: user.name,
++        name: user.fullName,
+         email: user.email,
+         phone: user.phoneNumber,
+         createdAt: user.createdAt,
+         totalOrders,
+         totalSpent,
+         avgOrderValue,
+         lastOrderDate,
+       }
+     })
+ 
+diff --git a/components/admin/CustomerDetail.tsx b/components/admin/CustomerDetail.tsx
+new file mode 100644
+index 0000000..262e5b1
+--- /dev/null
++++ b/components/admin/CustomerDetail.tsx
+@@ -0,0 +1,241 @@
++'use client'
++
++import { useState } from 'react'
++import { useRouter } from 'next/navigation'
++import { AlertCircle, Check, X } from 'lucide-react'
++import { Button } from '@/components/ui/button'
++import { Input } from '@/components/ui/input'
++import type { CustomerUpdate } from '@/lib/validations/customer'
++
++interface CustomerDetailProps {
++  id: number
++  name: string | null
++  email: string
++  phone: string | null
++  createdAt: Date
++  stats: {
++    totalOrders: number
++    totalSpent: number
++    avgOrderValue: number
++    lastOrderDate: Date | null
++  }
++}
++
++export default function CustomerDetail({ id, name, email, phone, createdAt, stats }: CustomerDetailProps) {
++  const router = useRouter()
++  const [isEditing, setIsEditing] = useState(false)
++  const [formData, setFormData] = useState({
++    name: name || '',
++    email: email,
++    phone: phone || '',
++  })
++  const [error, setError] = useState('')
++  const [isSaving, setIsSaving] = useState(false)
++
++  const handleInputChange = (field: keyof typeof formData, value: string) => {
++    setFormData((prev) => ({
++      ...prev,
++      [field]: value,
++    }))
++  }
++
++  const handleSave = async () => {
++    setIsSaving(true)
++    setError('')
++
++    try {
++      const updateData: CustomerUpdate = {
++        name: formData.name || undefined,
++        email: formData.email || undefined,
++        phone: formData.phone || undefined,
++      }
++
++      const response = await fetch(`/api/admin/customers/${id}`, {
++        method: 'PATCH',
++        headers: { 'Content-Type': 'application/json' },
++        body: JSON.stringify(updateData),
++      })
++
++      if (!response.ok) {
++        const data = await response.json()
++        throw new Error(data.message || 'Failed to update customer')
++      }
++
++      setIsEditing(false)
++      router.refresh()
++    } catch (err) {
++      const errorMsg = err instanceof Error ? err.message : 'Failed to update customer'
++      setError(errorMsg)
++    } finally {
++      setIsSaving(false)
++    }
++  }
++
++  const handleCancel = () => {
++    setFormData({
++      name: name || '',
++      email: email,
++      phone: phone || '',
++    })
++    setIsEditing(false)
++    setError('')
++  }
++
++  const handleRetry = () => {
++    setError('')
++  }
++
++  const isFormChanged = formData.name !== (name || '') || formData.email !== email || formData.phone !== (phone || '')
++
++  return (
++    <div className="space-y-4">
++      {error && (
++        <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
++          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
++          <div className="flex-1">
++            <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
++          </div>
++          <Button
++            variant="outline"
++            size="sm"
++            onClick={handleRetry}
++            className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 border-red-200 dark:border-red-800 whitespace-nowrap"
++          >
++            Retry
++          </Button>
++        </div>
++      )}
++
++      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6">
++        <div className="space-y-6">
++          {/* Contact Information */}
++          <div>
++            <div className="flex items-center justify-between mb-4">
++              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Contact Information</h2>
++              {!isEditing && (
++                <Button
++                  variant="outline"
++                  size="sm"
++                  onClick={() => setIsEditing(true)}
++                >
++                  Edit
++                </Button>
++              )}
++            </div>
++
++            {!isEditing ? (
++              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
++                <div>
++                  <p className="text-sm text-zinc-600 dark:text-zinc-400">Full Name</p>
++                  <p className="text-lg font-medium text-zinc-900 dark:text-zinc-100">{name || '—'}</p>
++                </div>
++                <div>
++                  <p className="text-sm text-zinc-600 dark:text-zinc-400">Email</p>
++                  <p className="text-lg font-medium text-zinc-900 dark:text-zinc-100">{email}</p>
++                </div>
++                <div>
++                  <p className="text-sm text-zinc-600 dark:text-zinc-400">Phone</p>
++                  <p className="text-lg font-medium text-zinc-900 dark:text-zinc-100">{phone || '—'}</p>
++                </div>
++              </div>
++            ) : (
++              <div className="space-y-4">
++                <div>
++                  <label className="text-sm text-zinc-600 dark:text-zinc-400">Full Name</label>
++                  <Input
++                    value={formData.name}
++                    onChange={(e) => handleInputChange('name', e.target.value)}
++                    className="mt-1"
++                    placeholder="Enter full name"
++                  />
++                </div>
++                <div>
++                  <label className="text-sm text-zinc-600 dark:text-zinc-400">Email</label>
++                  <Input
++                    type="email"
++                    value={formData.email}
++                    onChange={(e) => handleInputChange('email', e.target.value)}
++                    className="mt-1"
++                    placeholder="Enter email"
++                  />
++                </div>
++                <div>
++                  <label className="text-sm text-zinc-600 dark:text-zinc-400">Phone</label>
++                  <Input
++                    value={formData.phone}
++                    onChange={(e) => handleInputChange('phone', e.target.value)}
++                    className="mt-1"
++                    placeholder="Enter phone"
++                  />
++                </div>
++
++                <div className="flex gap-2 pt-2">
++                  <Button
++                    size="sm"
++                    onClick={handleSave}
++                    disabled={isSaving || !isFormChanged}
++                    className="bg-green-600 hover:bg-green-700 text-white"
++                  >
++                    <Check className="w-4 h-4 mr-2" />
++                    Save
++                  </Button>
++                  <Button
++                    size="sm"
++                    variant="outline"
++                    onClick={handleCancel}
++                    disabled={isSaving}
++                  >
++                    <X className="w-4 h-4 mr-2" />
++                    Cancel
++                  </Button>
++                </div>
++              </div>
++            )}
++          </div>
++
++          {/* Account Information */}
++          <div className="border-t border-zinc-200 dark:border-zinc-800 pt-6">
++            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Account Information</h3>
++            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
++              <div>
++                <p className="text-sm text-zinc-600 dark:text-zinc-400">Customer ID</p>
++                <p className="text-lg font-medium text-zinc-900 dark:text-zinc-100">#{id}</p>
++              </div>
++              <div>
++                <p className="text-sm text-zinc-600 dark:text-zinc-400">Member Since</p>
++                <p className="text-lg font-medium text-zinc-900 dark:text-zinc-100">
++                  {new Date(createdAt).toLocaleDateString()}
++                </p>
++              </div>
++            </div>
++          </div>
++
++          {/* Customer Statistics */}
++          <div className="border-t border-zinc-200 dark:border-zinc-800 pt-6">
++            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Statistics</h3>
++            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
++              <div>
++                <p className="text-sm text-zinc-600 dark:text-zinc-400">Total Orders</p>
++                <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{stats.totalOrders}</p>
++              </div>
++              <div>
++                <p className="text-sm text-zinc-600 dark:text-zinc-400">Total Spent</p>
++                <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">₹{stats.totalSpent.toLocaleString()}</p>
++              </div>
++              <div>
++                <p className="text-sm text-zinc-600 dark:text-zinc-400">Avg Order Value</p>
++                <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">₹{stats.avgOrderValue.toLocaleString()}</p>
++              </div>
++              <div>
++                <p className="text-sm text-zinc-600 dark:text-zinc-400">Last Order</p>
++                <p className="text-lg font-medium text-zinc-900 dark:text-zinc-100">
++                  {stats.lastOrderDate ? new Date(stats.lastOrderDate).toLocaleDateString() : '—'}
++                </p>
++              </div>
++            </div>
++          </div>
++        </div>
++      </div>
++    </div>
++  )
++}
+diff --git a/components/admin/CustomerErrorUI.tsx b/components/admin/CustomerErrorUI.tsx
+new file mode 100644
+index 0000000..dc698e2
+--- /dev/null
++++ b/components/admin/CustomerErrorUI.tsx
+@@ -0,0 +1,53 @@
++'use client'
++
++import { useState } from 'react'
++import { useRouter } from 'next/navigation'
++import { ArrowLeft, AlertCircle } from 'lucide-react'
++import Link from 'next/link'
++import { Button } from '@/components/ui/button'
++
++interface CustomerErrorUIProps {
++  error: string
++  customerId: string
++}
++
++export default function CustomerErrorUI({ error, customerId }: CustomerErrorUIProps) {
++  const router = useRouter()
++  const [isRetrying, setIsRetrying] = useState(false)
++
++  const handleRetry = () => {
++    setIsRetrying(true)
++    router.refresh()
++  }
++
++  return (
++    <div className="space-y-8">
++      <div className="flex items-center gap-3">
++        <Link
++          href="/admin/customers"
++          className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
++        >
++          <ArrowLeft className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
++        </Link>
++        <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Customer Details</h1>
++      </div>
++
++      <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-6 flex items-start gap-3">
++        <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
++        <div className="flex-1">
++          <p className="font-medium text-red-900 dark:text-red-200">Error</p>
++          <p className="mt-1 text-sm text-red-700 dark:text-red-400">{error}</p>
++        </div>
++        <Button
++          variant="outline"
++          size="sm"
++          onClick={handleRetry}
++          disabled={isRetrying}
++          className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 border-red-200 dark:border-red-800 whitespace-nowrap"
++        >
++          {isRetrying ? 'Retrying...' : 'Retry'}
++        </Button>
++      </div>
++    </div>
++  )
++}
+diff --git a/components/admin/CustomersTable.tsx b/components/admin/CustomersTable.tsx
+index df882cf..21bfa46 100644
+--- a/components/admin/CustomersTable.tsx
++++ b/components/admin/CustomersTable.tsx
+@@ -1,13 +1,14 @@
+ 'use client'
+ 
+ import { useState, useMemo } from 'react'
++import { useRouter } from 'next/navigation'
+ import { useQuery } from '@tanstack/react-query'
+ import {
+   useReactTable,
+   getCoreRowModel,
+   flexRender,
+   createColumnHelper,
+   type ColumnDef,
+ } from '@tanstack/react-table'
+ import { Input } from '@/components/ui/input'
+ import { Button } from '@/components/ui/button'
+@@ -19,20 +20,21 @@ interface Customer {
+   email: string
+   phone: string | null
+   createdAt: Date
+   totalOrders: number
+   totalSpent: number
+   avgOrderValue: number
+   lastOrderDate: Date | null
+ }
+ 
+ export function CustomersTable() {
++  const router = useRouter()
+   const [page, setPage] = useState(1)
+   const [search, setSearch] = useState('')
+   const pageSize = 10
+ 
+   const { data, isLoading, error, refetch } = useQuery({
+     queryKey: ['customers', page, search],
+     queryFn: async () => {
+       const params = new URLSearchParams({
+         page: String(page),
+         pageSize: String(pageSize),
+@@ -65,30 +67,37 @@ export function CustomersTable() {
+         header: 'Total Spent',
+         cell: (info) => `₹${info.getValue().toLocaleString()}`,
+       }),
+       columnHelper.accessor('lastOrderDate', {
+         header: 'Last Order',
+         cell: (info) => info.getValue() ? new Date(info.getValue()).toLocaleDateString() : '—',
+       }),
+       columnHelper.display({
+         id: 'actions',
+         header: 'Actions',
+-        cell: () => (
+-          <div className="flex gap-2">
+-            <Button variant="ghost" size="sm">
+-              <Eye className="w-4 h-4" />
+-            </Button>
+-            <Button variant="ghost" size="sm" className="text-red-600">
+-              <Trash2 className="w-4 h-4" />
+-            </Button>
+-          </div>
+-        ),
++        cell: (info) => {
++          const customerId = info.row.original.id
++          return (
++            <div className="flex gap-2">
++              <Button
++                variant="ghost"
++                size="sm"
++                onClick={() => router.push(`/admin/customers/${customerId}`)}
++              >
++                <Eye className="w-4 h-4" />
++              </Button>
++              <Button variant="ghost" size="sm" className="text-red-600">
++                <Trash2 className="w-4 h-4" />
++              </Button>
++            </div>
++          )
++        },
+       }),
+     ],
+     [columnHelper]
+   )
+ 
+   const table = useReactTable({
+     data: data?.customers || [],
+     columns,
+     getCoreRowModel: getCoreRowModel(),
+   })

@@ -1,9 +1,11 @@
-'use client'
+'use client';
+
+export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useMemo } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
-import { useCart } from '@/cart/CartContext'
+import { useCart } from '@/components/cart/CartContext'
 import PartCard from '@/components/PartCard'
 import CatalogFilters, { type SortOption } from '@/components/CatalogFilters'
 import Footer from '@/components/Footer'
@@ -31,7 +33,7 @@ const emptyForm: PartFormState = { type: 'BIKE_PART', partName: '', compatibleMo
 export default function PartsPage() {
   const { user, isSignedIn } = useUser()
   const isAdmin = (user?.publicMetadata?.role as string | undefined) === 'ADMIN'
-  const { addToCart } = useCart()
+  const { addItem } = useCart()
   const router = useRouter()
 
   const [parts, setParts] = useState<Part[]>([])
@@ -146,7 +148,7 @@ export default function PartsPage() {
                     !isAdmin
                       ? (part) => {
                           if (!isSignedIn) { router.push('/sign-in'); return }
-                          addToCart(part)
+                          addItem(part.id, part.partName, part.price, 1)
                         }
                       : undefined
                   }

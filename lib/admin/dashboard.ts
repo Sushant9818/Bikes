@@ -77,8 +77,8 @@ export async function getKPIs() {
 }
 
 export async function getMonthlyRevenue() {
-  const months = []
-  const data = []
+  const months: string[] = []
+  const data: number[] = []
 
   for (let i = 11; i >= 0; i--) {
     const date = new Date()

@@ -1,0 +1,184 @@
+6cfd267 fix: add role field to account info, remove unrelated parts changes
+ app/admin/(dashboard)/customers/[id]/page.tsx |  2 ++
+ app/admin/(dashboard)/parts/page.tsx          | 18 +++++++-----------
+ components/admin/CustomerDetail.tsx           |  9 +++++++--
+ 3 files changed, 16 insertions(+), 13 deletions(-)
+diff --git a/app/admin/(dashboard)/customers/[id]/page.tsx b/app/admin/(dashboard)/customers/[id]/page.tsx
+index d815864..17ef6ef 100644
+--- a/app/admin/(dashboard)/customers/[id]/page.tsx
++++ b/app/admin/(dashboard)/customers/[id]/page.tsx
+@@ -6,20 +6,21 @@ import CustomerDetail from '@/components/admin/CustomerDetail'
+ import { ApiError } from '@/lib/api-error'
+ import CustomerErrorUI from '@/components/admin/CustomerErrorUI'
+ 
+ type Params = { params: Promise<{ id: string }> }
+ 
+ interface Customer {
+   id: number
+   fullName: string | null
+   email: string
+   phoneNumber: string | null
++  role: string
+   createdAt: Date
+   orders: Array<{
+     id: number
+     status: string
+     totalAmount: number
+     createdAt: Date
+   }>
+ }
+ 
+ async function getCustomer(id: string): Promise<Customer> {
+@@ -88,20 +89,21 @@ export default async function CustomerDetailPage({ params }: Params) {
+         </div>
+       </div>
+ 
+       {/* Detail Content */}
+       <Suspense fallback={<CustomerDetailLoader />}>
+         <CustomerDetail
+           id={customer!.id}
+           name={customer!.fullName}
+           email={customer!.email}
+           phone={customer!.phoneNumber}
++          role={customer!.role}
+           createdAt={customer!.createdAt}
+           stats={{
+             totalOrders,
+             totalSpent,
+             avgOrderValue,
+             lastOrderDate,
+           }}
+         />
+       </Suspense>
+     </div>
+diff --git a/app/admin/(dashboard)/parts/page.tsx b/app/admin/(dashboard)/parts/page.tsx
+index 31044bd..5eba443 100644
+--- a/app/admin/(dashboard)/parts/page.tsx
++++ b/app/admin/(dashboard)/parts/page.tsx
+@@ -114,45 +114,41 @@ export default function PartsPage() {
+     },
+     {
+       key: 'price',
+       label: 'Price',
+       render: (value: unknown) => `Rs. ${Number(value).toFixed(2)}`,
+     },
+     {
+       key: 'quantity',
+       label: 'Stock',
+       render: (value: unknown, row: Part) => {
+-        const numValue = value as number
+-        const isLow = numValue <= row.minStock
++        const isLow = (value as number) <= row.minStock
+         return (
+           <span className="inline-flex items-center gap-2">
+-            {String(numValue)}
++            {value}
+             {isLow && <Badge variant="destructive">Low</Badge>}
+           </span>
+         )
+       },
+     },
+     {
+       key: 'minStock',
+       label: 'Min Stock',
+     },
+     {
+       key: 'status',
+       label: 'Status',
+-      render: (value: unknown) => {
+-        const statusValue = String(value)
+-        return (
+-          <Badge variant={statusValue === 'ACTIVE' ? 'default' : 'secondary'}>
+-            {statusValue}
+-          </Badge>
+-        )
+-      },
++      render: (value: unknown) => (
++        <Badge variant={value === 'ACTIVE' ? 'default' : 'secondary'}>
++          {value}
++        </Badge>
++      ),
+     },
+   ]
+ 
+   return (
+     <div>
+       <div className="mb-8">
+         <div className="flex items-center justify-between mb-6">
+           <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-3">
+             <Wrench className="w-8 h-8 text-[#E60012]" />
+             Parts Management
+diff --git a/components/admin/CustomerDetail.tsx b/components/admin/CustomerDetail.tsx
+index 262e5b1..b5a966b 100644
+--- a/components/admin/CustomerDetail.tsx
++++ b/components/admin/CustomerDetail.tsx
+@@ -5,30 +5,31 @@ import { useRouter } from 'next/navigation'
+ import { AlertCircle, Check, X } from 'lucide-react'
+ import { Button } from '@/components/ui/button'
+ import { Input } from '@/components/ui/input'
+ import type { CustomerUpdate } from '@/lib/validations/customer'
+ 
+ interface CustomerDetailProps {
+   id: number
+   name: string | null
+   email: string
+   phone: string | null
++  role: string
+   createdAt: Date
+   stats: {
+     totalOrders: number
+     totalSpent: number
+     avgOrderValue: number
+     lastOrderDate: Date | null
+   }
+ }
+ 
+-export default function CustomerDetail({ id, name, email, phone, createdAt, stats }: CustomerDetailProps) {
++export default function CustomerDetail({ id, name, email, phone, role, createdAt, stats }: CustomerDetailProps) {
+   const router = useRouter()
+   const [isEditing, setIsEditing] = useState(false)
+   const [formData, setFormData] = useState({
+     name: name || '',
+     email: email,
+     phone: phone || '',
+   })
+   const [error, setError] = useState('')
+   const [isSaving, setIsSaving] = useState(false)
+ 
+@@ -189,31 +190,35 @@ export default function CustomerDetail({ id, name, email, phone, createdAt, stat
+                     Cancel
+                   </Button>
+                 </div>
+               </div>
+             )}
+           </div>
+ 
+           {/* Account Information */}
+           <div className="border-t border-zinc-200 dark:border-zinc-800 pt-6">
+             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Account Information</h3>
+-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
++            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+               <div>
+                 <p className="text-sm text-zinc-600 dark:text-zinc-400">Customer ID</p>
+                 <p className="text-lg font-medium text-zinc-900 dark:text-zinc-100">#{id}</p>
+               </div>
+               <div>
+                 <p className="text-sm text-zinc-600 dark:text-zinc-400">Member Since</p>
+                 <p className="text-lg font-medium text-zinc-900 dark:text-zinc-100">
+                   {new Date(createdAt).toLocaleDateString()}
+                 </p>
+               </div>
++              <div>
++                <p className="text-sm text-zinc-600 dark:text-zinc-400">Role</p>
++                <p className="text-lg font-medium text-zinc-900 dark:text-zinc-100">{role}</p>
++              </div>
+             </div>
+           </div>
+ 
+           {/* Customer Statistics */}
+           <div className="border-t border-zinc-200 dark:border-zinc-800 pt-6">
+             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Statistics</h3>
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+               <div>
+                 <p className="text-sm text-zinc-600 dark:text-zinc-400">Total Orders</p>
+                 <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{stats.totalOrders}</p>

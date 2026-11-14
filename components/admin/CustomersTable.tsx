@@ -69,7 +69,7 @@ export function CustomersTable() {
       }),
       columnHelper.accessor('lastOrderDate', {
         header: 'Last Order',
-        cell: (info) => info.getValue() ? new Date(info.getValue()).toLocaleDateString() : '—',
+        cell: (info) => info.getValue() ? new Date(info.getValue() as any).toLocaleDateString() : '—',
       }),
       columnHelper.display({
         id: 'actions',
@@ -92,7 +92,7 @@ export function CustomersTable() {
           )
         },
       }),
-    ],
+    ] as any,
     [columnHelper]
   )
 

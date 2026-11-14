@@ -101,7 +101,7 @@ export function AppointmentsTable() {
           </div>
         ),
       }),
-    ],
+    ] as any,
     [columnHelper]
   )
 

@@ -2,7 +2,11 @@ import { prisma } from '@/lib/prisma'
 import { ApiError } from '@/lib/api-error'
 import { sendOrderConfirmationEmail, sendOrderAlertAdminEmail, sendLowStockAlertEmail } from '@/lib/email'
 import type { User, Order, OrderItem } from '@prisma/client'
-import type { OrderItemInput } from '@/lib/validations/order'
+
+export interface OrderItemInput {
+  partId: number
+  quantity: number
+}
 
 export async function createOrderDraft(
   user: User,

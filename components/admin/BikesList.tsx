@@ -138,12 +138,12 @@ export default function BikesList({ bikes }: BikesListProps) {
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDeleteDialog
-        isOpen={deleteConfirmId !== null}
+        open={deleteConfirmId !== null}
+        onOpenChange={(open) => !open && setDeleteConfirmId(null)}
         onConfirm={() => deleteConfirmId && handleDelete(deleteConfirmId)}
-        onCancel={() => setDeleteConfirmId(null)}
         title="Delete Bike"
-        description="Are you sure you want to delete this bike? This action cannot be undone."
-        isLoading={deleting !== null}
+        message="Are you sure you want to delete this bike? This action cannot be undone."
+        loading={deleting !== null}
       />
     </>
   )

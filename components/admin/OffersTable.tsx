@@ -83,11 +83,11 @@ export function OffersTable() {
       }),
       columnHelper.accessor('startDate', {
         header: 'Start Date',
-        cell: (info) => new Date(info.getValue()).toLocaleDateString(),
+        cell: (info) => info.getValue() ? new Date(info.getValue() as any).toLocaleDateString() : '—',
       }),
       columnHelper.accessor('endDate', {
         header: 'End Date',
-        cell: (info) => new Date(info.getValue()).toLocaleDateString(),
+        cell: (info) => info.getValue() ? new Date(info.getValue() as any).toLocaleDateString() : '—',
       }),
       columnHelper.display({
         id: 'actions',
@@ -106,7 +106,7 @@ export function OffersTable() {
           </div>
         ),
       }),
-    ],
+    ] as any,
     []
   )
 

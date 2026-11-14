@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { ClerkProvider } from '@clerk/nextjs'
-import { CartProvider } from '@/cart/CartContext'
+import { CartProvider } from '@/components/cart/CartContext'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { AdminRedirect } from '@/components/AdminRedirect'
 import './globals.css'
