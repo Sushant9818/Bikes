@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import {
   useReactTable,
@@ -22,6 +23,7 @@ import { AlertCircle, Trash2, Eye } from 'lucide-react'
 import type { Appointment } from '@prisma/client'
 
 export function AppointmentsTable() {
+  const router = useRouter()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
@@ -84,9 +86,13 @@ export function AppointmentsTable() {
       columnHelper.display({
         id: 'actions',
         header: 'Actions',
-        cell: () => (
+        cell: (info) => (
           <div className="flex gap-2">
-            <Button variant="ghost" size="sm">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push(`/admin/appointments/${info.row.original.id}`)}
+            >
               <Eye className="w-4 h-4" />
             </Button>
             <Button variant="ghost" size="sm" className="text-red-600">
