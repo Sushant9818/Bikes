@@ -81,6 +81,7 @@ model User {
   orders          Order[]
   activityLogs    ActivityLog[]
   appointments    Appointment[]
+  cartItems       CartItem[]
 
   @@map("users")
 }
@@ -131,6 +132,7 @@ model Part {
 
   stockHistory    StockHistory[]
   orderItems      OrderItem[]
+  cartItems       CartItem[]
 
   @@map("parts")
 }
@@ -203,6 +205,21 @@ model OrderItem {
   order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@map("order_items")
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    Int      @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partId    Int      @map("part_id")
+  part      Part     @relation(fields: [partId], references: [id])
+  quantity  Int
+  price     Float
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, partId])
+  @@map("cart_items")
 }
 
 model Appointment {
