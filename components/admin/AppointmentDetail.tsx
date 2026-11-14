@@ -12,6 +12,7 @@ interface AppointmentDetailProps {
   }
 }
 
+// Workflow steps use database status values but display as "Scheduled" not "Approved"
 const workflowSteps = ['APPROVED', 'IN_PROGRESS', 'COMPLETED'] as const
 const stepLabels: Record<string, string> = {
   APPROVED: 'Scheduled',
