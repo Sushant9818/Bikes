@@ -82,6 +82,7 @@ model User {
   activityLogs    ActivityLog[]
   appointments    Appointment[]
   cartItems       CartItem[]
+  wishlists      Wishlist[]
 
   @@map("users")
 }
@@ -133,6 +134,7 @@ model Part {
   stockHistory    StockHistory[]
   orderItems      OrderItem[]
   cartItems       CartItem[]
+  wishlists      Wishlist[]
 
   @@map("parts")
 }
@@ -220,6 +222,18 @@ model CartItem {
 
   @@unique([userId, partId])
   @@map("cart_items")
+}
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    Int      @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partId    Int      @map("part_id")
+  part      Part     @relation(fields: [partId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, partId])
+  @@map("wishlists")
 }
 
 model Appointment {
