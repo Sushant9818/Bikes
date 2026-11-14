@@ -46,8 +46,8 @@ export default function AppointmentDetail({ appointment }: AppointmentDetailProp
   const [isUpdating, setIsUpdating] = useState(false)
 
   // Only show workflow UI for appointments in the workflow
-  const isInWorkflow = workflowSteps.includes(appointment.status as any)
-  const currentStepIndex = workflowSteps.indexOf(appointment.status as any)
+  const isInWorkflow = workflowSteps.includes(appointment.status as typeof workflowSteps[number])
+  const currentStepIndex = workflowSteps.indexOf(appointment.status as typeof workflowSteps[number])
   const canMoveNext = currentStepIndex !== -1 && currentStepIndex < workflowSteps.length - 1
   const nextStatus = canMoveNext ? workflowSteps[currentStepIndex + 1] : null
 
