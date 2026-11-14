@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const appointmentStatusEnum = z.enum(['PENDING', 'APPROVED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'])
+export const appointmentStatusEnum = z.enum(['PENDING', 'APPROVED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'REJECTED'])
 
 export const appointmentCreateSchema = z.object({
   bikeModel: z.string().min(1, 'Bike model required'),

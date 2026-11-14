@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import {
   useReactTable,
@@ -26,6 +27,7 @@ interface Customer {
 }
 
 export function CustomersTable() {
+  const router = useRouter()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const pageSize = 10
@@ -72,16 +74,23 @@ export function CustomersTable() {
       columnHelper.display({
         id: 'actions',
         header: 'Actions',
-        cell: () => (
-          <div className="flex gap-2">
-            <Button variant="ghost" size="sm">
-              <Eye className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="sm" className="text-red-600">
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
-        ),
+        cell: (info) => {
+          const customerId = info.row.original.id
+          return (
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push(`/admin/customers/${customerId}`)}
+              >
+                <Eye className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="sm" className="text-red-600">
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          )
+        },
       }),
     ],
     [columnHelper]

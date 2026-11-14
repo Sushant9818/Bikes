@@ -33,6 +33,7 @@ export async function PATCH(req: NextRequest) {
       APPROVED: ['IN_PROGRESS', 'CANCELLED'],
       IN_PROGRESS: ['COMPLETED', 'CANCELLED'],
       COMPLETED: ['CANCELLED'],
+      REJECTED: [],
       CANCELLED: [],
     }
 
