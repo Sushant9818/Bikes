@@ -29,6 +29,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { userId } = useAuth();
+  const [prevUserId, setPrevUserId] = useState<string | null | undefined>(undefined);
+
+  // Handle auth state change: merge guest cart into authenticated cart on login
+  useEffect(() => {
+    if (userId && !prevUserId) {
+      // User just logged in - merge guest cart if exists
+      mergeGuestCartToDatabase();
+    }
+    setPrevUserId(userId);
+  }, [userId, prevUserId]);
 
   // Initialize cart on mount
   useEffect(() => {
@@ -64,6 +74,45 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setItems([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const mergeGuestCartToDatabase = async () => {
+    try {
+      const stored = localStorage.getItem(CART_STORAGE_KEY);
+      if (!stored) return;
+
+      const parsed = JSON.parse(stored);
+      const guestItems = parsed.items || [];
+
+      if (guestItems.length === 0) return;
+
+      console.log(`Merging ${guestItems.length} guest cart items to database`);
+
+      // Add each guest item to database cart
+      for (const item of guestItems) {
+        try {
+          await fetch('/api/cart', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              partId: item.partId,
+              quantity: item.quantity,
+              price: item.price,
+            }),
+          });
+        } catch (error) {
+          console.error(`Failed to merge item ${item.partId}:`, error);
+        }
+      }
+
+      // Clear guest cart
+      localStorage.removeItem(CART_STORAGE_KEY);
+
+      // Reload authenticated cart
+      await loadAuthenticatedCart();
+    } catch (error) {
+      console.error('Error merging guest cart:', error);
     }
   };
 
