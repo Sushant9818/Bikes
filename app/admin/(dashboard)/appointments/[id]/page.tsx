@@ -5,33 +5,12 @@ import { prisma } from '@/lib/prisma'
 import AppointmentDetail from '@/components/admin/AppointmentDetail'
 import { ApiError } from '@/lib/api-error'
 import AppointmentErrorUI from '@/components/admin/AppointmentErrorUI'
+import type { Appointment, AppointmentService } from '@prisma/client'
 
 type Params = { params: Promise<{ id: string }> }
 
-interface AppointmentWithServices {
-  id: number
-  userId: number | null
-  clientUsername: string
-  bikeModel: string
-  bikeYear: number | null
-  registrationNumber: string | null
-  vin: string | null
-  mileage: number | null
-  customService: string | null
-  description: string | null
-  preferredDate: Date
-  preferredTime: string
-  status: string
-  estimatedCost: number | null
-  finalCost: number | null
-  repairNotes: string | null
-  serviceNotes: string | null
-  mechanicName: string | null
-  createdAt: Date
-  services: Array<{
-    id: number
-    service: string
-  }>
+type AppointmentWithServices = Appointment & {
+  services: AppointmentService[]
 }
 
 async function getAppointment(id: string): Promise<AppointmentWithServices> {

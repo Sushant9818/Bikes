@@ -4,11 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AlertCircle, Clock, PlayCircle, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { Appointment } from '@prisma/client'
+import type { Appointment, AppointmentService } from '@prisma/client'
 
 interface AppointmentDetailProps {
   appointment: Appointment & {
-    services: Array<{ id: number; service: string }>
+    services: AppointmentService[]
   }
 }
 
@@ -204,7 +204,7 @@ export default function AppointmentDetail({ appointment }: AppointmentDetailProp
                 </div>
 
                 {/* Move Next Button */}
-                {canMoveNext && (
+                {canMoveNext && nextStatus && (
                   <Button
                     onClick={handleMoveNext}
                     disabled={isUpdating}
