@@ -195,6 +195,7 @@ model Order {
   createdAt             DateTime    @default(now()) @map("created_at")
 
   items                 OrderItem[]
+  shipment       Shipment?
   returns         Return[]
 
   @@map("orders")
@@ -374,4 +375,26 @@ model ReturnItem {
   reason      String
 
   @@map("return_items")
+}
+
+enum ShippingProvider {
+  STANDARD
+  EXPRESS
+  OVERNIGHT
+}
+
+model Shipment {
+  id              Int               @id @default(autoincrement())
+  orderId         Int               @unique @map("order_id")
+  order           Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  trackingNumber  String            @unique @map("tracking_number")
+  provider        ShippingProvider  @default(STANDARD)
+  status          String            @default("PENDING")
+  estimatedDelivery DateTime?       @map("estimated_delivery")
+  actualDelivery  DateTime?         @map("actual_delivery")
+  shippingCost    Float             @map("shipping_cost")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  @@map("shipments")
 }
