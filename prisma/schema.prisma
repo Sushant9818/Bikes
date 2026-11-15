@@ -84,6 +84,7 @@ model User {
   cartItems       CartItem[]
   wishlists      Wishlist[]
   reviews         Review[]
+  returns         Return[]
 
   @@map("users")
 }
@@ -194,6 +195,7 @@ model Order {
   createdAt             DateTime    @default(now()) @map("created_at")
 
   items                 OrderItem[]
+  returns         Return[]
 
   @@map("orders")
 }
@@ -333,4 +335,43 @@ model ContactRequest {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("contact_requests")
+}
+
+enum ReturnStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  SHIPPED_BACK
+  RECEIVED
+  REFUNDED
+  CANCELLED
+}
+
+model Return {
+  id            Int           @id @default(autoincrement())
+  orderId       Int           @map("order_id")
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId        Int?          @map("user_id")
+  user          User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  reason        String
+  status        ReturnStatus  @default(REQUESTED)
+  returnAmount  Float         @map("return_amount")
+  notes         String?
+  refundDate    DateTime?     @map("refund_date")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  items         ReturnItem[]
+
+  @@map("returns")
+}
+
+model ReturnItem {
+  id          Int    @id @default(autoincrement())
+  returnId    Int    @map("return_id")
+  return      Return @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  orderItemId Int    @map("order_item_id")
+  quantity    Int
+  reason      String
+
+  @@map("return_items")
 }
