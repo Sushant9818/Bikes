@@ -84,6 +84,7 @@ model User {
   cartItems       CartItem[]
   wishlists      Wishlist[]
   reviews         Review[]
+  loyalty         LoyaltyAccount?
   returns         Return[]
 
   @@map("users")
@@ -397,4 +398,53 @@ model Shipment {
   updatedAt       DateTime          @updatedAt @map("updated_at")
 
   @@map("shipments")
+}
+
+enum RewardTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+model LoyaltyAccount {
+  id              Int         @id @default(autoincrement())
+  userId          Int         @unique @map("user_id")
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  totalPoints     Int         @default(0) @map("total_points")
+  availablePoints Int         @default(0) @map("available_points")
+  tier            RewardTier  @default(BRONZE)
+  joinedAt        DateTime    @default(now()) @map("joined_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  transactions    PointTransaction[]
+  redemptions     Redemption[]
+
+  @@map("loyalty_accounts")
+}
+
+model PointTransaction {
+  id              Int             @id @default(autoincrement())
+  loyaltyId       Int             @map("loyalty_id")
+  loyalty         LoyaltyAccount  @relation(fields: [loyaltyId], references: [id], onDelete: Cascade)
+  orderId         Int?            @map("order_id")
+  points          Int
+  reason          String
+  notes           String?
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  @@map("point_transactions")
+}
+
+model Redemption {
+  id              Int             @id @default(autoincrement())
+  loyaltyId       Int             @map("loyalty_id")
+  loyalty         LoyaltyAccount  @relation(fields: [loyaltyId], references: [id], onDelete: Cascade)
+  orderId         Int?            @map("order_id")
+  pointsUsed      Int             @map("points_used")
+  discountAmount  Float           @map("discount_amount")
+  status          String          @default("COMPLETED")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  @@map("redemptions")
 }
