@@ -39,13 +39,12 @@ export default function CategoryPieChart({ data }: CategoryPieChartProps) {
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number) => `₹${value.toFixed(2)}`}
+              formatter={(value: any) => `₹${(value ?? 0).toFixed(2)}`}
               contentStyle={{
                 backgroundColor: '#ffffff',
                 border: '1px solid #e5e7eb',
                 borderRadius: '8px',
               }}
-              className="dark:bg-zinc-800 dark:border-zinc-700"
             />
             <Legend />
           </PieChart>

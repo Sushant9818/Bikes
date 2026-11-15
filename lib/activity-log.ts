@@ -17,7 +17,7 @@ export async function createActivityLog(params: ActivityLogParams): Promise<void
         action: params.action,
         entityType: params.entityType,
         entityId: params.entityId,
-        changes: params.changes || null,
+        changes: (params.changes || {}) as any,
       },
     })
   } catch (error) {

@@ -68,7 +68,7 @@ export default function VehicleCatalogPage({ type, heading, addLabel }: VehicleC
   const openAdd = () => { setEditing(null); setForm(emptyForm); setModalOpen(true) }
   const openEdit = (v: Vehicle) => {
     setEditing(v)
-    setForm({ type: v.type, modelName: v.modelName, year: v.year, price: v.price, quantity: v.quantity, imageUrl: v.imageUrl ?? '', description: v.description ?? '' })
+    setForm({ type: v.type, modelName: v.modelName, year: v.year ?? 0, price: v.price, quantity: v.quantity ?? 0, imageUrl: v.imageUrl ?? '', description: v.description ?? '' })
     setModalOpen(true)
   }
 

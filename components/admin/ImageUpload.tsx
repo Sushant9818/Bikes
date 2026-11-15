@@ -28,7 +28,7 @@ export default function ImageUpload({ images, onImagesChange, maxFiles = 10 }: I
     <div className="space-y-4">
       {/* Upload Area */}
       {canUpload && (
-        <UploadButton<OurFileRouter>
+        <UploadButton<OurFileRouter, "bikeImage">
           endpoint="bikeImage"
           onClientUploadComplete={(res) => {
             const newImages = res.map((file) => file.url)

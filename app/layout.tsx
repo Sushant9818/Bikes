@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { ClerkProvider } from '@clerk/nextjs'
-import { CartProvider } from '@/cart/CartContext'
+import { CartProvider } from '@/components/cart/CartContext'
+import { RecentlyViewedProvider } from '@/components/RecentlyViewedProvider'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { AdminRedirect } from '@/components/AdminRedirect'
 import './globals.css'
@@ -29,10 +30,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </head>
         <body className="bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
           <ThemeProvider>
+            <RecentlyViewedProvider>
             <CartProvider>
               <AdminRedirect />
               {children}
             </CartProvider>
+            </RecentlyViewedProvider>
           </ThemeProvider>
         </body>
       </html>

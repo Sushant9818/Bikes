@@ -103,7 +103,7 @@ export function OrdersTable() {
           </div>
         ),
       }),
-    ],
+    ] as any,
     [columnHelper, router]
   )
 

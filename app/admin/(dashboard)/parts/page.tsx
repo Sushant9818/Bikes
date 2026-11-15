@@ -120,11 +120,11 @@ export default function PartsPage() {
     {
       key: 'quantity',
       label: 'Stock',
-      render: (value: unknown, row: Part) => {
+      render: (value: unknown, row: any) => {
         const isLow = (value as number) <= row.minStock
         return (
           <span className="inline-flex items-center gap-2">
-            {value}
+            {String(value)}
             {isLow && <Badge variant="destructive">Low</Badge>}
           </span>
         )
@@ -139,7 +139,7 @@ export default function PartsPage() {
       label: 'Status',
       render: (value: unknown) => (
         <Badge variant={value === 'ACTIVE' ? 'default' : 'secondary'}>
-          {value}
+          {String(value)}
         </Badge>
       ),
     },
@@ -238,13 +238,13 @@ export default function PartsPage() {
 
       {/* Data Table */}
       <DataTable
-        columns={columns}
-        data={parts}
+        columns={columns as any}
+        data={parts as any}
         loading={loading}
         showActions
         isAdmin
-        onEdit={handleEdit}
-        onDelete={handleDelete}
+        onEdit={handleEdit as any}
+        onDelete={handleDelete as any}
         emptyMessage="No parts found. Click 'Add Part' to create one."
       />
 

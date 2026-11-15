@@ -144,7 +144,7 @@ export default function OrderDetail({ order }: OrderDetailProps) {
               </div>
             ) : (
               <div className="space-y-4">
-                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as any)}>
                   <SelectTrigger className="w-40">
                     <SelectValue />
                   </SelectTrigger>

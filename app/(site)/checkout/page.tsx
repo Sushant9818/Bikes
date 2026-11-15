@@ -1,11 +1,13 @@
-'use client'
+'use client';
+
+export const dynamic = 'force-dynamic';
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
-import { useCart } from '@/cart/CartContext'
+import { useCart } from '@/components/cart/CartContext'
 import Footer from '@/components/Footer'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,7 +24,7 @@ interface CheckoutFormData {
   address: string
 }
 
-function PaymentForm({ totalAmount, onSuccess }: { totalAmount: number; onSuccess: () => void }) {
+function PaymentForm({ totalPrice, onSuccess }: { totalPrice: number; onSuccess: () => void }) {
   const stripe = useStripe()
   const elements = useElements()
   const [loading, setLoading] = useState(false)
@@ -52,7 +54,7 @@ function PaymentForm({ totalAmount, onSuccess }: { totalAmount: number; onSucces
       <PaymentElement />
       {error && <p className="text-red-600 text-sm">{error}</p>}
       <Button type="submit" disabled={!stripe || loading} size="lg" className="w-full bg-[#E60012] hover:bg-[#C5000F]">
-        {loading ? 'Processing...' : `Pay ${formatNPR(totalAmount)}`}
+        {loading ? 'Processing...' : `Pay ${formatNPR(totalPrice)}`}
       </Button>
     </form>
   )
@@ -60,7 +62,7 @@ function PaymentForm({ totalAmount, onSuccess }: { totalAmount: number; onSucces
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { items, totalAmount, clearCart } = useCart()
+  const { items, totalPrice, clearCart } = useCart()
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState<'form' | 'payment'>('form')
   const [clientSecret, setClientSecret] = useState<string | null>(null)
@@ -142,7 +144,7 @@ export default function CheckoutPage() {
                   <h2 className="text-xl font-bold text-zinc-900 mb-4 dark:text-zinc-100">Pay with Card</h2>
                   {clientSecret && (
                     <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe', variables: { colorPrimary: '#E60012' } } }}>
-                      <PaymentForm totalAmount={totalAmount} onSuccess={onPaymentSuccess} />
+                      <PaymentForm totalPrice={totalPrice} onSuccess={onPaymentSuccess} />
                     </Elements>
                   )}
                 </div>
@@ -160,7 +162,7 @@ export default function CheckoutPage() {
                   ))}
                 </div>
                 <div className="border-t border-zinc-200 pt-4 flex justify-between font-bold text-lg dark:border-zinc-800">
-                  <span>Total</span><span className="text-[#E60012]">{formatNPR(totalAmount)}</span>
+                  <span>Total</span><span className="text-[#E60012]">{formatNPR(totalPrice)}</span>
                 </div>
               </div>
             </div>

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import HeroSection from '@/components/HeroSection'
 import Footer from '@/components/Footer'
 import ProductCard from '@/components/ProductCard'
+import RecommendationsSection from '@/components/RecommendationsSection'
 import { Button } from '@/components/ui/button'
 import SkeletonGrid from '@/components/SkeletonGrid'
 import type { Vehicle } from '@prisma/client'
@@ -40,6 +41,7 @@ export default function HomePage() {
           )}
         </div>
       </section>
+      <RecommendationsSection />
       <Footer />
     </>
   )

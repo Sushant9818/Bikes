@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const data = createIntentSchema.parse(body)
 
-    const order = await createOrderDraft(user, data.customerName, data.phone, data.email ?? null, data.address, data.items)
+    const order = await createOrderDraft(user, data.customerName, data.phone, data.email ?? null, data.address, [])
 
     const amountCents = Math.round(order.totalAmount * 100)
     if (amountCents < 50) throw new ApiError(400, 'Minimum amount is 0.50')

@@ -1,0 +1,483 @@
+d8e19f9 fix: remove any type casting in AppointmentDetail
+ components/admin/AppointmentDetail.tsx | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+1054940 fix: add proper TypeScript types for appointment detail
+ app/admin/(dashboard)/appointments/[id]/page.tsx | 27 +++---------------------
+ components/admin/AppointmentDetail.tsx           |  6 +++---
+ 2 files changed, 6 insertions(+), 27 deletions(-)
+4c06f1d feat: add appointment detail page with status workflow
+ app/admin/(dashboard)/appointments/[id]/page.tsx | 107 ++++++++++
+ components/admin/AppointmentDetail.tsx           | 242 +++++++++++++++++++++++
+ components/admin/AppointmentErrorUI.tsx          |  53 +++++
+ components/admin/AppointmentsTable.tsx           |  10 +-
+ 4 files changed, 410 insertions(+), 2 deletions(-)
+diff --git a/app/admin/(dashboard)/appointments/[id]/page.tsx b/app/admin/(dashboard)/appointments/[id]/page.tsx
+new file mode 100644
+index 0000000..aca212e
+--- /dev/null
++++ b/app/admin/(dashboard)/appointments/[id]/page.tsx
+@@ -0,0 +1,86 @@
++import { Suspense } from 'react'
++import { ArrowLeft } from 'lucide-react'
++import Link from 'next/link'
++import { prisma } from '@/lib/prisma'
++import AppointmentDetail from '@/components/admin/AppointmentDetail'
++import { ApiError } from '@/lib/api-error'
++import AppointmentErrorUI from '@/components/admin/AppointmentErrorUI'
++import type { Appointment, AppointmentService } from '@prisma/client'
++
++type Params = { params: Promise<{ id: string }> }
++
++type AppointmentWithServices = Appointment & {
++  services: AppointmentService[]
++}
++
++async function getAppointment(id: string): Promise<AppointmentWithServices> {
++  const appointment = await prisma.appointment.findUnique({
++    where: { id: parseInt(id) },
++    include: {
++      services: {
++        select: {
++          id: true,
++          service: true,
++        },
++      },
++    },
++  })
++
++  if (!appointment) {
++    throw new ApiError(404, 'Appointment not found')
++  }
++
++  return appointment as AppointmentWithServices
++}
++
++function AppointmentDetailLoader() {
++  return (
++    <div className="flex items-center justify-center py-12">
++      <div className="text-center">
++        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#E60012]" />
++        <p className="mt-4 text-zinc-600 dark:text-zinc-400">Loading appointment...</p>
++      </div>
++    </div>
++  )
++}
++
++export default async function AppointmentDetailPage({ params }: Params) {
++  const { id } = await params
++  let appointment: AppointmentWithServices | null = null
++  let error: string | null = null
++
++  try {
++    appointment = await getAppointment(id)
++  } catch (err) {
++    error = err instanceof ApiError ? err.message : 'Failed to load appointment'
++  }
++
++  if (error) {
++    return <AppointmentErrorUI error={error} appointmentId={id} />
++  }
++
++  return (
++    <div className="space-y-8">
++      {/* Header */}
++      <div className="flex items-center justify-between">
++        <div className="flex items-center gap-3">
++          <Link
++            href="/admin/appointments"
++            className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
++          >
++            <ArrowLeft className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
++          </Link>
++          <div>
++            <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Appointment Details</h1>
++            <p className="text-zinc-600 dark:text-zinc-400 mt-2">Appointment #{appointment?.id}</p>
++          </div>
++        </div>
++      </div>
++
++      {/* Detail Content */}
++      <Suspense fallback={<AppointmentDetailLoader />}>
++        <AppointmentDetail appointment={appointment!} />
++      </Suspense>
++    </div>
++  )
++}
+diff --git a/components/admin/AppointmentDetail.tsx b/components/admin/AppointmentDetail.tsx
+new file mode 100644
+index 0000000..b12c79d
+--- /dev/null
++++ b/components/admin/AppointmentDetail.tsx
+@@ -0,0 +1,242 @@
++'use client'
++
++import { useState } from 'react'
++import { useRouter } from 'next/navigation'
++import { AlertCircle, Clock, PlayCircle, CheckCircle2 } from 'lucide-react'
++import { Button } from '@/components/ui/button'
++import type { Appointment, AppointmentService } from '@prisma/client'
++
++interface AppointmentDetailProps {
++  appointment: Appointment & {
++    services: AppointmentService[]
++  }
++}
++
++const workflowSteps = ['APPROVED', 'IN_PROGRESS', 'COMPLETED'] as const
++const stepLabels: Record<string, string> = {
++  APPROVED: 'Scheduled',
++  IN_PROGRESS: 'In Progress',
++  COMPLETED: 'Completed',
++}
++
++const stepIcons: Record<string, React.ReactNode> = {
++  APPROVED: <Clock className="w-5 h-5" />,
++  IN_PROGRESS: <PlayCircle className="w-5 h-5" />,
++  COMPLETED: <CheckCircle2 className="w-5 h-5" />,
++}
++
++const statusColors: Record<string, string> = {
++  APPROVED: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
++  IN_PROGRESS: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
++  COMPLETED: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
++  PENDING: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300',
++  REJECTED: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
++  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
++}
++
++const stepColors: Record<string, string> = {
++  APPROVED: 'bg-blue-600 dark:bg-blue-500',
++  IN_PROGRESS: 'bg-yellow-600 dark:bg-yellow-500',
++  COMPLETED: 'bg-green-600 dark:bg-green-500',
++}
++
++export default function AppointmentDetail({ appointment }: AppointmentDetailProps) {
++  const router = useRouter()
++  const [error, setError] = useState('')
++  const [isUpdating, setIsUpdating] = useState(false)
++
++  // Only show workflow UI for appointments in the workflow
++  const isInWorkflow = workflowSteps.includes(appointment.status as typeof workflowSteps[number])
++  const currentStepIndex = workflowSteps.indexOf(appointment.status as typeof workflowSteps[number])
++  const canMoveNext = currentStepIndex !== -1 && currentStepIndex < workflowSteps.length - 1
++  const nextStatus = canMoveNext ? workflowSteps[currentStepIndex + 1] : null
++
++  const handleMoveNext = async () => {
++    if (!nextStatus) return
++
++    setIsUpdating(true)
++    setError('')
++
++    try {
++      const response = await fetch(`/api/admin/appointments/${appointment.id}`, {
++        method: 'PATCH',
++        headers: { 'Content-Type': 'application/json' },
++        body: JSON.stringify({ status: nextStatus }),
++      })
++
++      if (!response.ok) {
++        const data = await response.json()
++        throw new Error(data.message || 'Failed to update status')
++      }
++
++      router.refresh()
++    } catch (err) {
++      const errorMsg = err instanceof Error ? err.message : 'Failed to update status'
++      setError(errorMsg)
++    } finally {
++      setIsUpdating(false)
++    }
++  }
++
++  const handleRetry = () => {
++    setError('')
++  }
++
++  return (
++    <div className="space-y-6">
++      {error && (
++        <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
++          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
++          <div className="flex-1">
++            <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
++          </div>
++          <Button
++            variant="outline"
++            size="sm"
++            onClick={handleRetry}
++            className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 border-red-200 dark:border-red-800 whitespace-nowrap"
++          >
++            Retry
++          </Button>
++        </div>
++      )}
++
++      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6">
++        <div className="space-y-6">
++          {/* Appointment Details */}
++          <div>
++            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Appointment Details</h2>
++            <div className="grid grid-cols-2 gap-4">
++              <div>
++                <p className="text-sm text-zinc-600 dark:text-zinc-400">Client</p>
++                <p className="text-lg font-medium text-zinc-900 dark:text-zinc-100">{appointment.clientUsername}</p>
++              </div>
++              <div>
++                <p className="text-sm text-zinc-600 dark:text-zinc-400">Bike Model</p>
++                <p className="text-lg font-medium text-zinc-900 dark:text-zinc-100">{appointment.bikeModel}</p>
++              </div>
++              <div>
++                <p className="text-sm text-zinc-600 dark:text-zinc-400">Date</p>
++                <p className="text-lg font-medium text-zinc-900 dark:text-zinc-100">
++                  {new Date(appointment.preferredDate).toLocaleDateString()}
++                </p>
++              </div>
++              <div>
++                <p className="text-sm text-zinc-600 dark:text-zinc-400">Time</p>
++                <p className="text-lg font-medium text-zinc-900 dark:text-zinc-100">{appointment.preferredTime}</p>
++              </div>
++              <div>
++                <p className="text-sm text-zinc-600 dark:text-zinc-400">Estimated Cost</p>
++                <p className="text-lg font-medium text-zinc-900 dark:text-zinc-100">
++                  {appointment.estimatedCost ? `₹${appointment.estimatedCost.toLocaleString()}` : '—'}
++                </p>
++              </div>
++              <div>
++                <p className="text-sm text-zinc-600 dark:text-zinc-400">Mechanic</p>
++                <p className="text-lg font-medium text-zinc-900 dark:text-zinc-100">{appointment.mechanicName || '—'}</p>
++              </div>
++            </div>
++          </div>
++
++          {/* Status Workflow Section */}
++          {isInWorkflow && (
++            <>
++              <div className="border-t border-zinc-200 dark:border-zinc-800 pt-6">
++                <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-6">Appointment Status</h3>
++
++                {/* Current Status Badge */}
++                <div className="mb-6">
++                  <div className="flex items-center gap-3">
++                    <span className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${statusColors[appointment.status]}`}>
++                      {stepIcons[appointment.status]}
++                      {stepLabels[appointment.status] || appointment.status}
++                    </span>
++                  </div>
++                </div>
++
++                {/* Progress Steps */}
++                <div className="mb-6">
++                  <div className="flex items-center justify-between gap-2">
++                    {workflowSteps.map((step, index) => {
++                      const isCompleted = index < currentStepIndex || (index === currentStepIndex && appointment.status === step)
++                      const isCurrent = index === currentStepIndex
++                      return (
++                        <div key={step} className="flex items-center gap-3 flex-1">
++                          {/* Step Circle */}
++                          <div
++                            className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold flex-shrink-0 ${
++                              isCompleted || isCurrent
++                                ? stepColors[step]
++                                : 'bg-gray-300 dark:bg-gray-700'
++                            } ${
++                              isCurrent
++                                ? 'ring-2 ring-offset-2 ring-zinc-400 dark:ring-zinc-600'
++                                : ''
++                            } text-white dark:text-white`}
++                          >
++                            {index + 1}
++                          </div>
++
++                          {/* Step Label */}
++                          <div className="flex-1">
++                            <p className={`text-sm font-medium ${
++                              isCompleted || isCurrent
++                                ? 'text-zinc-900 dark:text-zinc-100'
++                                : 'text-zinc-500 dark:text-zinc-400'
++                            }`}>
++                              {stepLabels[step]}
++                            </p>
++                          </div>
++
++                          {/* Connecting Line */}
++                          {index < workflowSteps.length - 1 && (
++                            <div
++                              className={`h-1 flex-shrink-0 ${
++                                isCompleted ? 'bg-green-600 dark:bg-green-500' : 'bg-gray-300 dark:bg-gray-700'
++                              }`}
++                              style={{ width: '24px' }}
++                            />
++                          )}
++                        </div>
++                      )
++                    })}
++                  </div>
++                </div>
++
++                {/* Move Next Button */}
++                {canMoveNext && nextStatus && (
++                  <Button
++                    onClick={handleMoveNext}
++                    disabled={isUpdating}
++                    className="bg-blue-600 hover:bg-blue-700 text-white"
++                  >
++                    {isUpdating ? 'Updating...' : `Move to ${stepLabels[nextStatus]}`}
++                  </Button>
++                )}
++
++                {!canMoveNext && currentStepIndex !== -1 && (
++                  <p className="text-sm text-zinc-600 dark:text-zinc-400">This appointment is complete.</p>
++                )}
++              </div>
++            </>
++          )}
++
++          {/* Additional Details */}
++          {appointment.description && (
++            <div className="border-t border-zinc-200 dark:border-zinc-800 pt-6">
++              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Description</h3>
++              <p className="text-sm text-zinc-700 dark:text-zinc-300">{appointment.description}</p>
++            </div>
++          )}
++
++          {appointment.repairNotes && (
++            <div>
++              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Repair Notes</h3>
++              <p className="text-sm text-zinc-700 dark:text-zinc-300">{appointment.repairNotes}</p>
++            </div>
++          )}
++        </div>
++      </div>
++    </div>
++  )
++}
+diff --git a/components/admin/AppointmentErrorUI.tsx b/components/admin/AppointmentErrorUI.tsx
+new file mode 100644
+index 0000000..516e946
+--- /dev/null
++++ b/components/admin/AppointmentErrorUI.tsx
+@@ -0,0 +1,53 @@
++'use client'
++
++import { useState } from 'react'
++import { useRouter } from 'next/navigation'
++import { ArrowLeft, AlertCircle } from 'lucide-react'
++import Link from 'next/link'
++import { Button } from '@/components/ui/button'
++
++interface AppointmentErrorUIProps {
++  error: string
++  appointmentId: string
++}
++
++export default function AppointmentErrorUI({ error, appointmentId }: AppointmentErrorUIProps) {
++  const router = useRouter()
++  const [isRetrying, setIsRetrying] = useState(false)
++
++  const handleRetry = () => {
++    setIsRetrying(true)
++    router.refresh()
++  }
++
++  return (
++    <div className="space-y-8">
++      <div className="flex items-center gap-3">
++        <Link
++          href="/admin/appointments"
++          className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
++        >
++          <ArrowLeft className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
++        </Link>
++        <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Appointment Details</h1>
++      </div>
++
++      <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-6 flex items-start gap-3">
++        <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
++        <div className="flex-1">
++          <p className="font-medium text-red-900 dark:text-red-200">Error</p>
++          <p className="mt-1 text-sm text-red-700 dark:text-red-400">{error}</p>
++        </div>
++        <Button
++          variant="outline"
++          size="sm"
++          onClick={handleRetry}
++          disabled={isRetrying}
++          className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 border-red-200 dark:border-red-800 whitespace-nowrap"
++        >
++          {isRetrying ? 'Retrying...' : 'Retry'}
++        </Button>
++      </div>
++    </div>
++  )
++}
+diff --git a/components/admin/AppointmentsTable.tsx b/components/admin/AppointmentsTable.tsx
+index a6d9731..c07abac 100644
+--- a/components/admin/AppointmentsTable.tsx
++++ b/components/admin/AppointmentsTable.tsx
+@@ -1,13 +1,14 @@
+ 'use client'
+ 
+ import { useState, useMemo } from 'react'
++import { useRouter } from 'next/navigation'
+ import { useQuery } from '@tanstack/react-query'
+ import {
+   useReactTable,
+   getCoreRowModel,
+   flexRender,
+   createColumnHelper,
+   type ColumnDef,
+ } from '@tanstack/react-table'
+ import { Input } from '@/components/ui/input'
+ import { Button } from '@/components/ui/button'
+@@ -15,20 +16,21 @@ import {
+   Select,
+   SelectContent,
+   SelectItem,
+   SelectTrigger,
+   SelectValue,
+ } from '@/components/ui/select'
+ import { AlertCircle, Trash2, Eye } from 'lucide-react'
+ import type { Appointment } from '@prisma/client'
+ 
+ export function AppointmentsTable() {
++  const router = useRouter()
+   const [page, setPage] = useState(1)
+   const [search, setSearch] = useState('')
+   const [status, setStatus] = useState('')
+   const pageSize = 10
+ 
+   const { data, isLoading, error, refetch } = useQuery({
+     queryKey: ['appointments', page, search, status],
+     queryFn: async () => {
+       const params = new URLSearchParams({
+         page: String(page),
+@@ -77,23 +79,27 @@ export function AppointmentsTable() {
+           )
+         },
+       }),
+       columnHelper.accessor('mechanicName', {
+         header: 'Mechanic',
+         cell: (info) => info.getValue() || '—',
+       }),
+       columnHelper.display({
+         id: 'actions',
+         header: 'Actions',
+-        cell: () => (
++        cell: (info) => (
+           <div className="flex gap-2">
+-            <Button variant="ghost" size="sm">
++            <Button
++              variant="ghost"
++              size="sm"
++              onClick={() => router.push(`/admin/appointments/${info.row.original.id}`)}
++            >
+               <Eye className="w-4 h-4" />
+             </Button>
+             <Button variant="ghost" size="sm" className="text-red-600">
+               <Trash2 className="w-4 h-4" />
+             </Button>
+           </div>
+         ),
+       }),
+     ],
+     [columnHelper]

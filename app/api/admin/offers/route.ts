@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
 
     // Filter by discount range
     offersWithStatus = offersWithStatus.filter(o =>
-      o.discountPercent >= minDiscount && o.discountPercent <= maxDiscount
+      (o.discountPercent ?? 0) >= minDiscount && (o.discountPercent ?? 0) <= maxDiscount
     )
 
     const total = offersWithStatus.length
