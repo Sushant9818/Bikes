@@ -46,6 +46,8 @@
     "speakeasy": "^2.0.0",
     "stripe": "^22.3.2",
     "svix": "^1.99.1",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-react": "^5.35.0",
     "tailwind-merge": "^3.6.0",
     "uploadthing": "^7.7.4",
     "zod": "^4.4.3"
@@ -62,6 +64,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/speakeasy": "^2.0.10",
+    "@types/swagger-ui-react": "^5.18.0",
     "@vitejs/plugin-react": "^6.0.4",
     "eslint": "^9",
     "eslint-config-next": "16.2.11",
