@@ -91,6 +91,9 @@ model User {
   referralCodes   ReferralCode[]
   referralsCreated Referral[] @relation("ReferrerOfReferral")
   referralsReceived Referral[] @relation("RefereeOfReferral")
+  supportTickets  SupportTicket[]
+  assignedTickets SupportTicket[] @relation("TicketAssignee")
+  ticketReplies   TicketReply[]
   returns         Return[]
 
   @@map("users")
@@ -544,4 +547,63 @@ model Referral {
   completedAt     DateTime?       @map("completed_at")
 
   @@map("referrals")
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+enum TicketCategory {
+  ORDER
+  PAYMENT
+  SHIPPING
+  PRODUCT
+  ACCOUNT
+  TECHNICAL
+  OTHER
+}
+
+model SupportTicket {
+  id              Int             @id @default(autoincrement())
+  userId          Int             @map("user_id")
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId         Int?            @map("order_id")
+  title           String
+  description     String
+  category        TicketCategory
+  priority        TicketPriority  @default(MEDIUM)
+  status          TicketStatus    @default(OPEN)
+  assignedToId    Int?            @map("assigned_to_id")
+  assignedTo      User?           @relation("TicketAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  resolvedAt      DateTime?       @map("resolved_at")
+
+  replies         TicketReply[]
+
+  @@map("support_tickets")
+}
+
+model TicketReply {
+  id              Int             @id @default(autoincrement())
+  ticketId        Int             @map("ticket_id")
+  ticket          SupportTicket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId          Int             @map("user_id")
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message         String
+  isInternal      Boolean         @default(false) @map("is_internal")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  @@map("ticket_replies")
 }
