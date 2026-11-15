@@ -85,6 +85,7 @@ model User {
   wishlists      Wishlist[]
   reviews         Review[]
   loyalty         LoyaltyAccount?
+  twoFactorAuth   TwoFactorAuth?
   returns         Return[]
 
   @@map("users")
@@ -447,4 +448,17 @@ model Redemption {
   createdAt       DateTime        @default(now()) @map("created_at")
 
   @@map("redemptions")
+}
+
+model TwoFactorAuth {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @unique @map("user_id")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secret          String
+  backupCodes     String    @map("backup_codes")
+  enabled         Boolean   @default(false)
+  verifiedAt      DateTime? @map("verified_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@map("two_factor_auth")
 }
