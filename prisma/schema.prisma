@@ -94,6 +94,7 @@ model User {
   supportTickets  SupportTicket[]
   assignedTickets SupportTicket[] @relation("TicketAssignee")
   ticketReplies   TicketReply[]
+  webhooks       Webhook[]
   returns         Return[]
 
   @@map("users")
@@ -606,4 +607,55 @@ model TicketReply {
   createdAt       DateTime        @default(now()) @map("created_at")
 
   @@map("ticket_replies")
+}
+
+enum WebhookEvent {
+  ORDER_CREATED
+  ORDER_UPDATED
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+  PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  REFUND_PROCESSED
+  CUSTOMER_REGISTERED
+  REVIEW_POSTED
+}
+
+enum WebhookStatus {
+  ACTIVE
+  INACTIVE
+  FAILED
+}
+
+model Webhook {
+  id              Int             @id @default(autoincrement())
+  userId          Int             @map("user_id")
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url             String
+  events          String
+  status          WebhookStatus   @default(ACTIVE)
+  secret          String
+  failureCount    Int             @default(0) @map("failure_count")
+  lastTriggered   DateTime?       @map("last_triggered")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  deliveries      WebhookDelivery[]
+
+  @@map("webhooks")
+}
+
+model WebhookDelivery {
+  id              Int       @id @default(autoincrement())
+  webhookId       Int       @map("webhook_id")
+  webhook         Webhook   @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  event           String
+  payload         String
+  statusCode      Int?      @map("status_code")
+  response        String?
+  success         Boolean   @default(false)
+  attempts        Int       @default(1)
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@map("webhook_deliveries")
 }
