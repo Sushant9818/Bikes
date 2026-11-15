@@ -88,6 +88,9 @@ model User {
   twoFactorAuth   TwoFactorAuth?
   notificationPrefs NotificationPreference?
   notifications    Notification[]
+  referralCodes   ReferralCode[]
+  referralsCreated Referral[] @relation("ReferrerOfReferral")
+  referralsReceived Referral[] @relation("RefereeOfReferral")
   returns         Return[]
 
   @@map("users")
@@ -508,4 +511,37 @@ model Notification {
   @@map("notifications")
   @@index([userId])
   @@index([read])
+}
+
+model ReferralCode {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @map("user_id")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code            String    @unique
+  commissionRate  Float     @default(5.0) @map("commission_rate")
+  isActive        Boolean   @default(true) @map("is_active")
+  totalEarnings   Float     @default(0) @map("total_earnings")
+  totalReferrals  Int       @default(0) @map("total_referrals")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  referrals       Referral[]
+
+  @@map("referral_codes")
+}
+
+model Referral {
+  id              Int             @id @default(autoincrement())
+  codeId          Int             @map("code_id")
+  code            ReferralCode    @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  referrerId      Int             @map("referrer_id")
+  referrer        User            @relation("ReferrerOfReferral", fields: [referrerId], references: [id], onDelete: Cascade)
+  refereeId       Int?            @map("referee_id")
+  referee         User?           @relation("RefereeOfReferral", fields: [refereeId], references: [id], onDelete: SetNull)
+  orderId         Int?            @map("order_id")
+  commissionEarned Float         @default(0) @map("commission_earned")
+  status          String          @default("PENDING")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  completedAt     DateTime?       @map("completed_at")
+
+  @@map("referrals")
 }
