@@ -31,32 +31,39 @@ export default function BookServicePage() {
     if (!form.bikeModel || !form.preferredDate || !form.preferredTime) { setError('Please fill in all required fields'); return }
 
     setSubmitting(true)
-    const [hours, minutes] = form.preferredTime.split(':').map(Number)
-    const dateTime = new Date(`${form.preferredDate}T${form.preferredTime}:00`).toISOString()
+    try {
+      const dateStr = `${form.preferredDate}T${form.preferredTime}:00Z`
+      const dateObj = new Date(dateStr)
+      if (isNaN(dateObj.getTime())) throw new Error('Invalid date/time')
+      const dateTime = dateObj.toISOString()
 
-    const res = await fetch('/api/appointments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        bikeModel: form.bikeModel,
-        bikeYear: form.bikeYear ? Number(form.bikeYear) : null,
-        registrationNumber: form.registrationNumber || null,
-        vin: form.vin || null,
-        mileage: form.mileage ? Number(form.mileage) : null,
-        services: selectedServices,
-        customService: showCustom ? form.customService : null,
-        description: form.description || null,
-        preferredDate: dateTime,
-        preferredTime: form.preferredTime,
-      }),
-    })
-    setSubmitting(false)
+      const res = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bikeModel: form.bikeModel,
+          bikeYear: form.bikeYear ? Number(form.bikeYear) : null,
+          registrationNumber: form.registrationNumber || null,
+          vin: form.vin || null,
+          mileage: form.mileage ? Number(form.mileage) : null,
+          services: selectedServices,
+          customService: showCustom ? form.customService : null,
+          description: form.description || null,
+          preferredDate: dateTime,
+          preferredTime: form.preferredTime,
+        }),
+      })
 
-    if (res.ok) {
-      router.push('/my-appointments')
-    } else {
-      const body = await res.json().catch(() => ({}))
-      setError(body.message ?? 'Failed to book appointment')
+      if (res.ok) {
+        router.push('/my-appointments')
+      } else {
+        const body = await res.json().catch(() => ({}))
+        setError(body.message ?? 'Failed to book appointment')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to process date/time')
+    } finally {
+      setSubmitting(false)
     }
   }
 
