@@ -11,8 +11,8 @@ export const appointmentCreateSchema = z.object({
   description: z.string().optional(),
   customService: z.string().optional(),
   services: z.array(z.string()).optional(),
-  preferredDate: z.string().datetime(),
-  preferredTime: z.string(),
+  preferredDate: z.string().min(1, 'Date required'),
+  preferredTime: z.string().min(1, 'Time required'),
 })
 
 export const appointmentUpdateSchema = z.object({

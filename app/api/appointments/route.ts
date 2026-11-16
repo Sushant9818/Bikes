@@ -11,6 +11,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const data = appointmentCreateSchema.parse(body)
 
+    const dateObj = new Date(data.preferredDate)
+    if (isNaN(dateObj.getTime())) {
+      throw new Error('Invalid date format')
+    }
+
     const appointment = await prisma.appointment.create({
       data: {
         userId: user.id,
@@ -22,7 +27,7 @@ export async function POST(req: NextRequest) {
         mileage: data.mileage ?? null,
         customService: data.customService ?? null,
         description: data.description ?? null,
-        preferredDate: new Date(data.preferredDate),
+        preferredDate: dateObj,
         preferredTime: data.preferredTime,
         status: 'PENDING',
       },
