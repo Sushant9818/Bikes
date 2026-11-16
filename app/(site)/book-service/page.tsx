@@ -32,7 +32,19 @@ export default function BookServicePage() {
 
     setSubmitting(true)
     try {
-      const dateStr = `${form.preferredDate}T${form.preferredTime}:00Z`
+      // Convert AM/PM time to 24-hour format
+      const timeParts = form.preferredTime.match(/(\d{2}):(\d{2})\s+(AM|PM)/)
+      if (!timeParts) throw new Error('Invalid time format')
+
+      let hours = parseInt(timeParts[1], 10)
+      const minutes = timeParts[2]
+      const period = timeParts[3]
+
+      if (period === 'PM' && hours !== 12) hours += 12
+      if (period === 'AM' && hours === 12) hours = 0
+
+      const timeStr = `${String(hours).padStart(2, '0')}:${minutes}`
+      const dateStr = `${form.preferredDate}T${timeStr}:00Z`
       const dateObj = new Date(dateStr)
       if (isNaN(dateObj.getTime())) throw new Error('Invalid date/time')
       const dateTime = dateObj.toISOString()
