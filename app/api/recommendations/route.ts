@@ -3,8 +3,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '8');
+    const limit = 8;
 
     // Get all parts with stats
     const parts = await prisma.part.findMany({
@@ -12,8 +11,12 @@ export async function GET(request: NextRequest) {
         reviews: { select: { rating: true } },
         _count: { select: { orderItems: true } },
       },
-      take: limit * 2,
+      take: Math.min(limit * 3, 100),
     });
+
+    if (parts.length === 0) {
+      return NextResponse.json({ recommendations: [] });
+    }
 
     // Calculate scores
     const partsWithScores = parts.map(part => {
@@ -44,9 +47,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ recommendations });
   } catch (error) {
     console.error('Error fetching recommendations:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch recommendations', recommendations: [] },
-      { status: 500 }
-    );
+    // Return empty recommendations instead of error
+    return NextResponse.json({ recommendations: [] });
   }
 }
