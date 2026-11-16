@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
 
     const appointment = await prisma.appointment.create({
       data: {
+        userId: user.id,
         clientUsername: user.username,
         bikeModel: data.bikeModel,
         bikeYear: data.bikeYear ?? null,
@@ -27,6 +28,18 @@ export async function POST(req: NextRequest) {
       },
       include: { services: true },
     })
+
+    // Create service relationships if services provided
+    if (data.services && data.services.length > 0) {
+      for (const service of data.services) {
+        await prisma.appointmentService.create({
+          data: {
+            appointmentId: appointment.id,
+            service: service,
+          },
+        })
+      }
+    }
 
     return NextResponse.json(toAppointmentDto(appointment), { status: 201 })
   } catch (err) {

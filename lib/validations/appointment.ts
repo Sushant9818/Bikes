@@ -10,6 +10,7 @@ export const appointmentCreateSchema = z.object({
   mileage: z.number().optional(),
   description: z.string().optional(),
   customService: z.string().optional(),
+  services: z.array(z.string()).optional(),
   preferredDate: z.string().datetime(),
   preferredTime: z.string(),
 })

@@ -31,6 +31,9 @@ export default function BookServicePage() {
     if (!form.bikeModel || !form.preferredDate || !form.preferredTime) { setError('Please fill in all required fields'); return }
 
     setSubmitting(true)
+    const [hours, minutes] = form.preferredTime.split(':').map(Number)
+    const dateTime = new Date(`${form.preferredDate}T${form.preferredTime}:00`).toISOString()
+
     const res = await fetch('/api/appointments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -43,7 +46,7 @@ export default function BookServicePage() {
         services: selectedServices,
         customService: showCustom ? form.customService : null,
         description: form.description || null,
-        preferredDate: form.preferredDate,
+        preferredDate: dateTime,
         preferredTime: form.preferredTime,
       }),
     })
