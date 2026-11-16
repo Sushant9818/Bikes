@@ -70,7 +70,14 @@ export default function BookServicePage() {
         router.push('/my-appointments')
       } else {
         const body = await res.json().catch(() => ({}))
-        setError(body.message ?? 'Failed to book appointment')
+        if (body.errors) {
+          const errorMessages = Object.entries(body.errors)
+            .map(([field, msgs]: [string, unknown]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+            .join(' | ')
+          setError(errorMessages)
+        } else {
+          setError(body.message ?? 'Failed to book appointment')
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to process date/time')
