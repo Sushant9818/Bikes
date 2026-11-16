@@ -1,0 +1,661 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  USER
+}
+
+enum VehicleType {
+  BIKE
+  SCOOTER
+}
+
+enum PartType {
+  BIKE_PART
+  SCOOTER_PART
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CONFIRMED
+  SHIPPED
+  CANCELLED
+  PAYMENT_REVIEW
+  FAILED
+}
+
+enum AppointmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ServiceType {
+  OIL_CHANGE
+  ENGINE_REPAIR
+  TIRE_REPLACEMENT
+  BRAKE_SERVICE
+  BATTERY_REPLACEMENT
+  CHAIN_ADJUSTMENT
+  CHAIN_REPLACEMENT
+  SUSPENSION_REPAIR
+  ELECTRICAL_REPAIR
+  GENERAL_INSPECTION
+  FULL_SERVICE
+  CLUTCH_REPAIR
+  GEAR_REPAIR
+  COOLING_SYSTEM_REPAIR
+  FUEL_SYSTEM_CLEANING
+  AIR_FILTER_REPLACEMENT
+  SPARK_PLUG_REPLACEMENT
+  WHEEL_ALIGNMENT
+  WASHING_DETAILING
+  OTHER
+}
+
+model User {
+  id              Int       @id @default(autoincrement())
+  clerkUserId     String    @unique @map("clerk_user_id")
+  username        String    @unique
+  fullName        String?   @map("full_name")
+  email           String    @unique
+  phoneNumber     String?   @map("phone_number")
+  role            Role      @default(USER)
+  status          String    @default("ACTIVE")
+  avatar          String?
+  lastLogin       DateTime? @map("last_login")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  orders          Order[]
+  activityLogs    ActivityLog[]
+  appointments    Appointment[]
+  cartItems       CartItem[]
+  wishlists      Wishlist[]
+  reviews         Review[]
+  loyalty         LoyaltyAccount?
+  twoFactorAuth   TwoFactorAuth?
+  notificationPrefs NotificationPreference?
+  notifications    Notification[]
+  referralCodes   ReferralCode[]
+  referralsCreated Referral[] @relation("ReferrerOfReferral")
+  referralsReceived Referral[] @relation("RefereeOfReferral")
+  supportTickets  SupportTicket[]
+  assignedTickets SupportTicket[] @relation("TicketAssignee")
+  ticketReplies   TicketReply[]
+  webhooks       Webhook[]
+  returns         Return[]
+
+  @@map("users")
+}
+
+model Vehicle {
+  id              Int         @id @default(autoincrement())
+  type            VehicleType
+  modelName       String      @unique @map("model_name")
+  slug            String?     @unique
+  category        String?
+  brand           String      @default("Suzuki")
+  price           Float
+  discountPrice   Float?      @map("discount_price")
+  year            Int?
+  quantity        Int
+  imageUrl        String?     @map("image_url")
+  images          String[]    @default([])
+  description     String?
+  specs           Json?
+  colors          String[]    @default([])
+  status          String      @default("ACTIVE")
+  isFeatured      Boolean     @default(false) @map("is_featured")
+  isNewArrival    Boolean     @default(false) @map("is_new_arrival")
+  seoTitle        String?     @map("seo_title")
+  seoDescription  String?     @map("seo_description")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  stockHistory    StockHistory[]
+
+  @@map("vehicles")
+}
+
+model Part {
+  id              Int      @id @default(autoincrement())
+  type            PartType
+  partName        String   @map("part_name")
+  sku             String   @unique
+  compatibleModel String?  @map("compatible_model")
+  brand           String   @default("Suzuki")
+  price           Float
+  quantity        Int
+  minStock        Int      @default(10) @map("min_stock")
+  imageUrl        String?  @map("image_url")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  stockHistory    StockHistory[]
+  orderItems      OrderItem[]
+  cartItems       CartItem[]
+  wishlists      Wishlist[]
+
+  reviews         Review[]
+  @@map("parts")
+}
+
+model StockHistory {
+  id              Int       @id @default(autoincrement())
+  vehicleId       Int?      @map("vehicle_id")
+  vehicle         Vehicle?  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  partId          Int?      @map("part_id")
+  part            Part?     @relation(fields: [partId], references: [id], onDelete: Cascade)
+  quantityChange  Int       @map("quantity_change")
+  reason          String
+  notes           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@map("stock_history")
+}
+
+model ActivityLog {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @map("user_id")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action          String
+  entityType      String    @map("entity_type")
+  entityId        Int?      @map("entity_id")
+  changes         Json?
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@map("activity_logs")
+}
+
+model Offer {
+  id              Int       @id @default(autoincrement())
+  title           String
+  description     String?
+  discountPercent Float?    @map("discount_percent")
+  startDate       DateTime? @map("start_date") @db.Date
+  endDate         DateTime? @map("end_date") @db.Date
+  imageUrl        String?   @map("image_url")
+
+  @@map("offers")
+}
+
+model Order {
+  id                    Int         @id @default(autoincrement())
+  customerName          String      @map("customer_name")
+  phone                 String
+  email                 String?
+  address               String
+  totalAmount           Float       @map("total_amount")
+  status                OrderStatus @default(PENDING)
+  stripePaymentIntentId String?     @unique @map("stripe_payment_intent_id")
+  userId                Int?        @map("user_id")
+  user                  User?       @relation(fields: [userId], references: [id])
+  createdAt             DateTime    @default(now()) @map("created_at")
+
+  items                 OrderItem[]
+  shipment       Shipment?
+  returns         Return[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id       Int    @id @default(autoincrement())
+  partId   Int    @map("part_id")
+  part     Part   @relation(fields: [partId], references: [id])
+  partName String @map("part_name")
+  price    Float
+  quantity Int
+  orderId  Int    @map("order_id")
+  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    Int      @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partId    Int      @map("part_id")
+  part      Part     @relation(fields: [partId], references: [id])
+  quantity  Int
+  price     Float
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, partId])
+  @@map("cart_items")
+}
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    Int      @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partId    Int      @map("part_id")
+  part      Part     @relation(fields: [partId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, partId])
+  @@map("wishlists")
+}
+
+
+model Coupon {
+  id              Int       @id @default(autoincrement())
+  code            String    @unique
+  description     String?
+  discountPercent Float     // e.g., 10 for 10%
+  discountFixed   Float?    // Fixed amount instead of percentage
+  minAmount       Float?    // Minimum order amount to apply coupon
+  maxUses         Int?      // Null = unlimited
+  usesCount       Int       @default(0)
+  expiryDate      DateTime? @map("expiry_date")
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("coupons")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    Int      @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partId    Int      @map("part_id")
+  part      Part     @relation(fields: [partId], references: [id], onDelete: Cascade)
+  rating    Int
+  title     String
+  content   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, partId])
+  @@map("reviews")
+}
+
+
+model Appointment {
+  id                 Int                  @id @default(autoincrement())
+  userId             Int?                 @map("user_id")
+  user               User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientUsername     String               @map("client_username")
+  bikeModel          String               @map("bike_model")
+  bikeYear           Int?                 @map("bike_year")
+  registrationNumber String?              @map("registration_number")
+  vin                String?
+  mileage            Int?
+  customService      String?              @map("custom_service")
+  description        String?
+  preferredDate      DateTime             @map("preferred_date") @db.Date
+  preferredTime      String               @map("preferred_time")
+  status             AppointmentStatus    @default(PENDING)
+  estimatedCost      Float?               @map("estimated_cost")
+  finalCost          Float?               @map("final_cost")
+  repairNotes        String?              @map("repair_notes")
+  serviceNotes       String?              @map("service_notes")
+  mechanicName       String?              @map("mechanic_name")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+
+  services           AppointmentService[]
+
+  @@map("appointments")
+}
+
+model AppointmentService {
+  id            Int         @id @default(autoincrement())
+  appointmentId Int         @map("appointment_id")
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  service       ServiceType
+
+  @@map("appointment_services")
+}
+
+model TestDriveRequest {
+  id            Int       @id @default(autoincrement())
+  name          String
+  phone         String
+  email         String?
+  vehicleId     Int?      @map("vehicle_id")
+  preferredDate DateTime? @map("preferred_date") @db.Date
+  message       String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@map("test_drive_requests")
+}
+
+model ContactRequest {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("contact_requests")
+}
+
+enum ReturnStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  SHIPPED_BACK
+  RECEIVED
+  REFUNDED
+  CANCELLED
+}
+
+model Return {
+  id            Int           @id @default(autoincrement())
+  orderId       Int           @map("order_id")
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId        Int?          @map("user_id")
+  user          User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  reason        String
+  status        ReturnStatus  @default(REQUESTED)
+  returnAmount  Float         @map("return_amount")
+  notes         String?
+  refundDate    DateTime?     @map("refund_date")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  items         ReturnItem[]
+
+  @@map("returns")
+}
+
+model ReturnItem {
+  id          Int    @id @default(autoincrement())
+  returnId    Int    @map("return_id")
+  return      Return @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  orderItemId Int    @map("order_item_id")
+  quantity    Int
+  reason      String
+
+  @@map("return_items")
+}
+
+enum ShippingProvider {
+  STANDARD
+  EXPRESS
+  OVERNIGHT
+}
+
+model Shipment {
+  id              Int               @id @default(autoincrement())
+  orderId         Int               @unique @map("order_id")
+  order           Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  trackingNumber  String            @unique @map("tracking_number")
+  provider        ShippingProvider  @default(STANDARD)
+  status          String            @default("PENDING")
+  estimatedDelivery DateTime?       @map("estimated_delivery")
+  actualDelivery  DateTime?         @map("actual_delivery")
+  shippingCost    Float             @map("shipping_cost")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  @@map("shipments")
+}
+
+enum RewardTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+model LoyaltyAccount {
+  id              Int         @id @default(autoincrement())
+  userId          Int         @unique @map("user_id")
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  totalPoints     Int         @default(0) @map("total_points")
+  availablePoints Int         @default(0) @map("available_points")
+  tier            RewardTier  @default(BRONZE)
+  joinedAt        DateTime    @default(now()) @map("joined_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  transactions    PointTransaction[]
+  redemptions     Redemption[]
+
+  @@map("loyalty_accounts")
+}
+
+model PointTransaction {
+  id              Int             @id @default(autoincrement())
+  loyaltyId       Int             @map("loyalty_id")
+  loyalty         LoyaltyAccount  @relation(fields: [loyaltyId], references: [id], onDelete: Cascade)
+  orderId         Int?            @map("order_id")
+  points          Int
+  reason          String
+  notes           String?
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  @@map("point_transactions")
+}
+
+model Redemption {
+  id              Int             @id @default(autoincrement())
+  loyaltyId       Int             @map("loyalty_id")
+  loyalty         LoyaltyAccount  @relation(fields: [loyaltyId], references: [id], onDelete: Cascade)
+  orderId         Int?            @map("order_id")
+  pointsUsed      Int             @map("points_used")
+  discountAmount  Float           @map("discount_amount")
+  status          String          @default("COMPLETED")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  @@map("redemptions")
+}
+
+model TwoFactorAuth {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @unique @map("user_id")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secret          String
+  backupCodes     String    @map("backup_codes")
+  enabled         Boolean   @default(false)
+  verifiedAt      DateTime? @map("verified_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@map("two_factor_auth")
+}
+
+enum NotificationType {
+  ORDER_CREATED
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+  ORDER_CANCELLED
+  PAYMENT_RECEIVED
+  REFUND_PROCESSED
+  REVIEW_REPLY
+  COUPON_AVAILABLE
+  LOYALTY_POINTS
+  APPOINTMENT_REMINDER
+}
+
+model NotificationPreference {
+  id              Int     @id @default(autoincrement())
+  userId          Int     @unique @map("user_id")
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailNotifs     Boolean @default(true) @map("email_notifs")
+  smsNotifs       Boolean @default(false) @map("sms_notifs")
+  pushNotifs      Boolean @default(true) @map("push_notifs")
+  orderUpdates    Boolean @default(true) @map("order_updates")
+  promotions      Boolean @default(true) @map("promotions")
+  reviews         Boolean @default(true) @map("reviews")
+  loyalty         Boolean @default(true) @map("loyalty")
+
+  @@map("notification_preferences")
+}
+
+model Notification {
+  id              Int               @id @default(autoincrement())
+  userId          Int               @map("user_id")
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            NotificationType
+  title           String
+  message         String
+  data            String?
+  read            Boolean           @default(false)
+  readAt          DateTime?         @map("read_at")
+  createdAt       DateTime          @default(now()) @map("created_at")
+
+  @@map("notifications")
+  @@index([userId])
+  @@index([read])
+}
+
+model ReferralCode {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @map("user_id")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code            String    @unique
+  commissionRate  Float     @default(5.0) @map("commission_rate")
+  isActive        Boolean   @default(true) @map("is_active")
+  totalEarnings   Float     @default(0) @map("total_earnings")
+  totalReferrals  Int       @default(0) @map("total_referrals")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  referrals       Referral[]
+
+  @@map("referral_codes")
+}
+
+model Referral {
+  id              Int             @id @default(autoincrement())
+  codeId          Int             @map("code_id")
+  code            ReferralCode    @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  referrerId      Int             @map("referrer_id")
+  referrer        User            @relation("ReferrerOfReferral", fields: [referrerId], references: [id], onDelete: Cascade)
+  refereeId       Int?            @map("referee_id")
+  referee         User?           @relation("RefereeOfReferral", fields: [refereeId], references: [id], onDelete: SetNull)
+  orderId         Int?            @map("order_id")
+  commissionEarned Float         @default(0) @map("commission_earned")
+  status          String          @default("PENDING")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  completedAt     DateTime?       @map("completed_at")
+
+  @@map("referrals")
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+enum TicketCategory {
+  ORDER
+  PAYMENT
+  SHIPPING
+  PRODUCT
+  ACCOUNT
+  TECHNICAL
+  OTHER
+}
+
+model SupportTicket {
+  id              Int             @id @default(autoincrement())
+  userId          Int             @map("user_id")
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId         Int?            @map("order_id")
+  title           String
+  description     String
+  category        TicketCategory
+  priority        TicketPriority  @default(MEDIUM)
+  status          TicketStatus    @default(OPEN)
+  assignedToId    Int?            @map("assigned_to_id")
+  assignedTo      User?           @relation("TicketAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  resolvedAt      DateTime?       @map("resolved_at")
+
+  replies         TicketReply[]
+
+  @@map("support_tickets")
+}
+
+model TicketReply {
+  id              Int             @id @default(autoincrement())
+  ticketId        Int             @map("ticket_id")
+  ticket          SupportTicket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId          Int             @map("user_id")
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message         String
+  isInternal      Boolean         @default(false) @map("is_internal")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  @@map("ticket_replies")
+}
+
+enum WebhookEvent {
+  ORDER_CREATED
+  ORDER_UPDATED
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+  PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  REFUND_PROCESSED
+  CUSTOMER_REGISTERED
+  REVIEW_POSTED
+}
+
+enum WebhookStatus {
+  ACTIVE
+  INACTIVE
+  FAILED
+}
+
+model Webhook {
+  id              Int             @id @default(autoincrement())
+  userId          Int             @map("user_id")
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url             String
+  events          String
+  status          WebhookStatus   @default(ACTIVE)
+  secret          String
+  failureCount    Int             @default(0) @map("failure_count")
+  lastTriggered   DateTime?       @map("last_triggered")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  deliveries      WebhookDelivery[]
+
+  @@map("webhooks")
+}
+
+model WebhookDelivery {
+  id              Int       @id @default(autoincrement())
+  webhookId       Int       @map("webhook_id")
+  webhook         Webhook   @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  event           String
+  payload         String
+  statusCode      Int?      @map("status_code")
+  response        String?
+  success         Boolean   @default(false)
+  attempts        Int       @default(1)
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@map("webhook_deliveries")
+}

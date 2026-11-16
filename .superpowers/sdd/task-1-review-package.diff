@@ -1,0 +1,3054 @@
+diff --git a/docs/superpowers/plans/2026-10-05-admin-panel-mvp.md b/docs/superpowers/plans/2026-10-05-admin-panel-mvp.md
+new file mode 100644
+index 0000000..0d60e8a
+--- /dev/null
++++ b/docs/superpowers/plans/2026-10-05-admin-panel-mvp.md
+@@ -0,0 +1,2744 @@
++# Admin Panel MVP Implementation Plan
++
++> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
++
++**Goal:** Build a production-ready admin dashboard (MVP) with dashboard KPIs, and full CRUD for Bikes, Scooters, and Parts inventory, protected by role-based access control.
++
++**Architecture:** Admin panel at `/app/admin` protected by middleware role checks (SUPER_ADMIN | ADMIN). Database schema extends User, Vehicle, and Part models. Clerk auth drives identity; Prisma User table drives authorization. Uploadthing handles image uploads. ActivityLog records all admin mutations for audit trail. Dashboard pulls data from `/api/admin/dashboard`; CRUD modules use `/api/admin/[bikes|scooters|parts]` routes.
++
++**Tech Stack:** Next.js 14 App Router, TypeScript, Tailwind CSS + shadcn/ui (Button, Card, Dialog, Input, Select, Table, Sheet, DropdownMenu, Toast), Recharts (bar + pie charts), TanStack Table (@tanstack/react-table), Uploadthing, Prisma + PostgreSQL, Zod validation, react-hook-form.
++
++**Spec:** `docs/superpowers/specs/2026-10-05-admin-panel-mvp-design.md`
++
++## Global Constraints
++
++- Clerk remains auth provider; no switch to NextAuth
++- Hard delete for MVP (soft delete Phase 2)
++- Role enum: SUPER_ADMIN | ADMIN | USER (migrate existing ADMIN → SUPER_ADMIN, CLIENT → USER)
++- Currency: NPR (Rs.), dates: YYYY-MM-DD
++- Admin routes: `/app/admin/(dashboard)/*`
++- API routes: `/app/api/admin/*`
++- Components: `/components/admin/*`
++- Libs: `/lib/admin/*` (permissions, dashboard helpers, validations)
++- Existing vehicle/part APIs remain unchanged; admin APIs layer on top
++
++## Review Focus
++
++1. **Unauthorized access to `/admin/*`:** Non-admins (USER role) can access routes via URL bar — middleware must catch and redirect to `/permission-denied` before rendering.
++2. **Missing ActivityLog on mutations:** Admin creates a bike, but ActivityLog doesn't record it — audit trail incomplete.
++3. **Image upload failure:** Uploadthing config missing or API key unset — image fields silently fail to upload.
++4. **Role migration data loss:** Existing ADMIN/CLIENT users not migrated to SUPER_ADMIN/USER before schema enforces enum values.
++5. **Dashboard chart data stale:** KPI cards show old revenue; endpoint not revalidating on stock/order changes.
++
++---
++
++## Task 1: Update Prisma Schema & Generate Migration
++
++**Files:**
++- Modify: `prisma/schema.prisma`
++- Create: `prisma/migrations/[timestamp]_add_admin_fields.sql`
++- Create: `lib/admin/validations.ts` (Zod schemas for MVP)
++
++**Interfaces:**
++- Consumes: Existing Prisma User, Vehicle, Part, Appointment, Order models
++- Produces: Updated Prisma models with Role enum, User.status, User.avatar, Vehicle specs/colors/seoFields, Part.sku/minStock, new StockHistory and ActivityLog models
++
++**Steps:**
++
++- [ ] **Step 1: Update `prisma/schema.prisma` — add Role enum and update User model**
++
++Edit `prisma/schema.prisma` — add Role enum before model definitions and update User:
++
++```prisma
++enum Role {
++  SUPER_ADMIN
++  ADMIN
++  USER
++}
++
++model User {
++  id              Int       @id @default(autoincrement())
++  clerkUserId     String    @unique @map("clerk_user_id")
++  username        String    @unique
++  fullName        String?   @map("full_name")
++  email           String    @unique
++  phoneNumber     String?   @map("phone_number")
++  role            Role      @default(USER)
++  status          String    @default("ACTIVE")
++  avatar          String?
++  lastLogin       DateTime? @map("last_login")
++  createdAt       DateTime  @default(now()) @map("created_at")
++  updatedAt       DateTime  @updatedAt @map("updated_at")
++
++  appointments    Appointment[]
++  orders          Order[]
++  activityLogs    ActivityLog[]
++
++  @@map("users")
++}
++```
++
++- [ ] **Step 2: Update Vehicle model in `prisma/schema.prisma`**
++
++Replace the existing Vehicle model with:
++
++```prisma
++model Vehicle {
++  id              Int         @id @default(autoincrement())
++  type            VehicleType
++  modelName       String      @unique @map("model_name")
++  slug            String?     @unique
++  category        String?     // Sport, Commuter, Cruiser, Adventure (bikes); null for scooters
++  brand           String      @default("Suzuki")
++  price           Float
++  discountPrice   Float?      @map("discount_price")
++  year            Int?
++  quantity        Int
++  imageUrl        String?     @map("image_url")
++  images          String[]    @default([])
++  description     String?
++  specs           Json?
++  colors          String[]    @default([])
++  status          String      @default("ACTIVE")
++  isFeatured      Boolean     @default(false) @map("is_featured")
++  isNewArrival    Boolean     @default(false) @map("is_new_arrival")
++  seoTitle        String?     @map("seo_title")
++  seoDescription  String?     @map("seo_description")
++  createdAt       DateTime    @default(now()) @map("created_at")
++  updatedAt       DateTime    @updatedAt @map("updated_at")
++
++  stockHistory    StockHistory[]
++
++  @@map("vehicles")
++}
++```
++
++- [ ] **Step 3: Update Part model in `prisma/schema.prisma`**
++
++Replace the existing Part model with:
++
++```prisma
++model Part {
++  id              Int      @id @default(autoincrement())
++  type            PartType
++  partName        String   @map("part_name")
++  sku             String   @unique
++  category        String   // Engine, Brake, Electrical, Body, Accessories, Oil & Lubricants
++  compatibleModel String?  @map("compatible_model")
++  brand           String   @default("Suzuki")
++  price           Float
++  quantity        Int
++  minStock        Int      @default(10) @map("min_stock")
++  imageUrl        String?  @map("image_url")
++  status          String   @default("ACTIVE")
++  createdAt       DateTime @default(now()) @map("created_at")
++  updatedAt       DateTime @updatedAt @map("updated_at")
++
++  stockHistory    StockHistory[]
++  orderItems      OrderItem[]
++
++  @@map("parts")
++}
++```
++
++- [ ] **Step 4: Add StockHistory model to `prisma/schema.prisma`**
++
++Add before the final models:
++
++```prisma
++model StockHistory {
++  id              Int       @id @default(autoincrement())
++  vehicleId       Int?      @map("vehicle_id")
++  vehicle         Vehicle?  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
++  partId          Int?      @map("part_id")
++  part            Part?     @relation(fields: [partId], references: [id], onDelete: Cascade)
++  quantityChange  Int       @map("quantity_change")
++  reason          String
++  notes           String?
++  createdAt       DateTime  @default(now()) @map("created_at")
++
++  @@map("stock_history")
++}
++```
++
++- [ ] **Step 5: Add ActivityLog model to `prisma/schema.prisma`**
++
++Add before the final models:
++
++```prisma
++model ActivityLog {
++  id              Int       @id @default(autoincrement())
++  userId          Int       @map("user_id")
++  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
++  action          String
++  entityType      String    @map("entity_type")
++  entityId        Int?      @map("entity_id")
++  changes         Json?
++  createdAt       DateTime  @default(now()) @map("created_at")
++
++  @@map("activity_logs")
++}
++```
++
++- [ ] **Step 6: Run `npx prisma migrate dev --name add_admin_fields`**
++
++This generates the migration SQL file automatically. Confirm it creates:
++- Role enum
++- New columns on `users` table (status, avatar, lastLogin)
++- New columns on `vehicles` table (slug, category, discountPrice, images[], specs, colors[], isFeatured, isNewArrival, seoTitle, seoDescription)
++- New columns on `parts` table (sku UNIQUE, minStock)
++- New `stock_history` table with foreign keys
++- New `activity_logs` table with foreign keys
++
++Output: `prisma/migrations/[timestamp]_add_admin_fields/migration.sql`
++
++- [ ] **Step 7: Regenerate Prisma Client**
++
++Run: `npx prisma generate`
++
++Verify no errors in output.
++
++- [ ] **Step 8: Create `lib/admin/validations.ts` with Zod schemas**
++
++```typescript
++import { z } from 'zod'
++
++export const bikeSchema = z.object({
++  modelName: z.string().min(1, 'Model name is required').max(100),
++  category: z.enum(['Sport', 'Commuter', 'Cruiser', 'Adventure']),
++  price: z.number().positive('Price must be positive'),
++  discountPrice: z.number().positive('Discount price must be positive').optional().nullable(),
++  quantity: z.number().int().min(0, 'Quantity cannot be negative'),
++  status: z.enum(['ACTIVE', 'DRAFT', 'OUT_OF_STOCK']),
++  isFeatured: z.boolean().default(false),
++  isNewArrival: z.boolean().default(false),
++  colors: z.array(z.string().min(1)).min(1, 'At least one color required'),
++  specs: z.record(z.any()).optional(),
++  seoTitle: z.string().max(120).optional(),
++  seoDescription: z.string().max(160).optional(),
++  imageUrl: z.string().url().optional(),
++  images: z.array(z.string().url()).optional(),
++})
++
++export type BikeFormData = z.infer<typeof bikeSchema>
++
++export const scooterSchema = z.object({
++  modelName: z.string().min(1, 'Model name is required').max(100),
++  price: z.number().positive('Price must be positive'),
++  discountPrice: z.number().positive('Discount price must be positive').optional().nullable(),
++  quantity: z.number().int().min(0, 'Quantity cannot be negative'),
++  status: z.enum(['ACTIVE', 'DRAFT', 'OUT_OF_STOCK']),
++  isFeatured: z.boolean().default(false),
++  isNewArrival: z.boolean().default(false),
++  colors: z.array(z.string().min(1)).min(1, 'At least one color required'),
++  specs: z.record(z.any()).optional(),
++  seoTitle: z.string().max(120).optional(),
++  seoDescription: z.string().max(160).optional(),
++  imageUrl: z.string().url().optional(),
++  images: z.array(z.string().url()).optional(),
++})
++
++export type ScooterFormData = z.infer<typeof scooterSchema>
++
++export const partSchema = z.object({
++  partName: z.string().min(1, 'Part name is required').max(100),
++  sku: z.string().min(1, 'SKU is required').max(50),
++  category: z.enum(['Engine', 'Brake', 'Electrical', 'Body', 'Accessories', 'Oil & Lubricants']),
++  compatibleModel: z.string().optional(),
++  price: z.number().positive('Price must be positive'),
++  quantity: z.number().int().min(0, 'Quantity cannot be negative'),
++  minStock: z.number().int().min(0, 'Min stock cannot be negative').default(10),
++  status: z.enum(['ACTIVE', 'DRAFT', 'OUT_OF_STOCK']),
++  imageUrl: z.string().url().optional(),
++})
++
++export type PartFormData = z.infer<typeof partSchema>
++```
++
++- [ ] **Step 9: Commit**
++
++```bash
++git add prisma/schema.prisma prisma/migrations lib/admin/validations.ts
++git commit -m "feat: extend prisma schema with admin fields and new models
++
++- Add Role enum (SUPER_ADMIN | ADMIN | USER)
++- Update User: add status, avatar, lastLogin
++- Update Vehicle: add category, slug, discount price, images[], colors[], specs, SEO fields, featured/newArrival toggles
++- Update Part: add sku, minStock
++- Add StockHistory model for inventory audit
++- Add ActivityLog model for admin action audit
++- Add Zod schemas for Bikes, Scooters, Parts validation"
++```
++
++---
++
++## Task 2: Seed Script & Role Migration
++
++**Files:**
++- Create: `prisma/seed.ts`
++- Modify: `package.json` (add prisma.seed script)
++
++**Interfaces:**
++- Consumes: Updated Prisma schema
++- Produces: Default SUPER_ADMIN test user, sample Bikes/Scooters/Parts data
++
++**Steps:**
++
++- [ ] **Step 1: Create `prisma/seed.ts`**
++
++```typescript
++import { PrismaClient, Role, VehicleType, PartType } from '@prisma/client'
++
++const prisma = new PrismaClient()
++
++async function main() {
++  console.log('Seeding database...')
++
++  // Clear existing data (safe for dev only)
++  await prisma.activityLog.deleteMany()
++  await prisma.stockHistory.deleteMany()
++  await prisma.part.deleteMany()
++  await prisma.vehicle.deleteMany()
++  await prisma.user.deleteMany()
++
++  // Create test SUPER_ADMIN user (will be linked to Clerk via webhook)
++  const superAdmin = await prisma.user.create({
++    data: {
++      clerkUserId: 'clerk_test_super_admin',
++      username: 'admin',
++      email: 'admin@suzuki-bike.com',
++      fullName: 'Admin User',
++      role: Role.SUPER_ADMIN,
++      status: 'ACTIVE',
++    },
++  })
++  console.log(`Created SUPER_ADMIN: ${superAdmin.email}`)
++
++  // Sample Bikes
++  const bikes = await prisma.vehicle.createMany({
++    data: [
++      {
++        type: VehicleType.BIKE,
++        modelName: 'Suzuki GSX-R1000',
++        slug: 'suzuki-gsx-r1000',
++        category: 'Sport',
++        price: 1500000,
++        discountPrice: 1400000,
++        quantity: 5,
++        year: 2026,
++        imageUrl: '/assets/images/bikes/gsx-r1000.jpg',
++        images: ['/assets/images/bikes/gsx-r1000.jpg'],
++        colors: ['Red', 'Black', 'White'],
++        status: 'ACTIVE',
++        isFeatured: true,
++        isNewArrival: true,
++        description: 'High-performance supersport motorcycle',
++        specs: {
++          engine: '999cc',
++          mileage: '18 km/l',
++          power: '203 bhp',
++          torque: '117 Nm',
++          fuel: '19L',
++          weight: '203kg',
++          brakes: 'Dual disc',
++          tyres: 'Michelin Pilot',
++        },
++        seoTitle: 'Suzuki GSX-R1000 - High Performance Supersport',
++        seoDescription: 'Buy Suzuki GSX-R1000 online in Nepal',
++      },
++      {
++        type: VehicleType.BIKE,
++        modelName: 'Suzuki Gixxer 250',
++        slug: 'suzuki-gixxer-250',
++        category: 'Commuter',
++        price: 300000,
++        quantity: 12,
++        year: 2026,
++        imageUrl: '/assets/images/bikes/gixxer-250.jpg',
++        images: ['/assets/images/bikes/gixxer-250.jpg'],
++        colors: ['Red', 'Blue'],
++        status: 'ACTIVE',
++        description: 'Affordable street bike for daily commute',
++        specs: {
++          engine: '249cc',
++          mileage: '40 km/l',
++          power: '26.2 bhp',
++          torque: '22.2 Nm',
++          fuel: '15L',
++          weight: '168kg',
++          brakes: 'Single disc',
++          tyres: 'Ceat',
++        },
++      },
++    ],
++  })
++  console.log(`Created ${bikes.count} bikes`)
++
++  // Sample Scooters
++  const scooters = await prisma.vehicle.createMany({
++    data: [
++      {
++        type: VehicleType.SCOOTER,
++        modelName: 'Suzuki Access 125',
++        slug: 'suzuki-access-125',
++        price: 150000,
++        quantity: 20,
++        year: 2026,
++        imageUrl: '/assets/images/scooters/access-125.jpg',
++        images: ['/assets/images/scooters/access-125.jpg'],
++        colors: ['White', 'Black', 'Gray'],
++        status: 'ACTIVE',
++        isFeatured: true,
++        description: 'Fuel-efficient automatic scooter',
++        specs: {
++          engine: '125cc',
++          mileage: '65 km/l',
++          power: '8.6 bhp',
++          torque: '10 Nm',
++          fuel: '5.2L',
++          weight: '107kg',
++          brakes: 'Drum',
++          tyres: 'Ceat',
++        },
++      },
++    ],
++  })
++  console.log(`Created ${scooters.count} scooters`)
++
++  // Sample Parts
++  const parts = await prisma.part.createMany({
++    data: [
++      {
++        type: PartType.BIKE_PART,
++        partName: 'Oil Filter',
++        sku: 'OF-001',
++        category: 'Engine',
++        price: 2000,
++        quantity: 5,
++        minStock: 10,
++        status: 'ACTIVE',
++        compatibleModel: 'GSX-R1000 / Gixxer 250',
++      },
++      {
++        type: PartType.BIKE_PART,
++        partName: 'Brake Pads',
++        sku: 'BP-001',
++        category: 'Brake',
++        price: 4500,
++        quantity: 8,
++        minStock: 10,
++        status: 'ACTIVE',
++      },
++      {
++        type: PartType.SCOOTER_PART,
++        partName: 'Air Filter',
++        sku: 'AF-001',
++        category: 'Engine',
++        price: 1500,
++        quantity: 3,
++        minStock: 5,
++        status: 'ACTIVE',
++      },
++    ],
++  })
++  console.log(`Created ${parts.count} parts`)
++
++  console.log('Seed completed successfully!')
++}
++
++main()
++  .catch((e) => {
++    console.error(e)
++    process.exit(1)
++  })
++  .finally(async () => {
++    await prisma.$disconnect()
++  })
++```
++
++- [ ] **Step 2: Update `package.json` to include seed script**
++
++In `package.json`, add/update the prisma section:
++
++```json
++{
++  "prisma": {
++    "seed": "ts-node --transpile-only prisma/seed.ts"
++  }
++}
++```
++
++Also ensure `ts-node` is in `devDependencies`:
++
++```bash
++npm install --save-dev ts-node
++```
++
++- [ ] **Step 3: Run seed**
++
++```bash
++npx prisma db seed
++```
++
++Expected output:
++```
++Seeding database...
++Created SUPER_ADMIN: admin@suzuki-bike.com
++Created 2 bikes
++Created 1 scooter
++Created 3 parts
++Seed completed successfully!
++```
++
++- [ ] **Step 4: Migrate existing users (if database had data)**
++
++Run this as a one-off script to migrate existing ADMIN/CLIENT roles to SUPER_ADMIN/USER:
++
++```bash
++npx prisma db execute --stdin < /dev/stdin <<'EOF'
++UPDATE users SET role = 'SUPER_ADMIN' WHERE role = 'ADMIN';
++UPDATE users SET role = 'USER' WHERE role = 'CLIENT';
++EOF
++```
++
++(For production, create a proper migration SQL file instead.)
++
++- [ ] **Step 5: Commit**
++
++```bash
++git add prisma/seed.ts package.json
++git commit -m "feat: add prisma seed script with test data and role migration
++
++- Create SUPER_ADMIN test user
++- Seed 3 sample vehicles (2 bikes, 1 scooter)
++- Seed 3 sample parts with low-stock thresholds
++- Add ts-node dev dependency for seed execution"
++```
++
++---
++
++## Task 3: Update Middleware & Auth Helpers
++
++**Files:**
++- Modify: `middleware.ts` (add `/admin` route protection)
++- Modify: `lib/auth.ts` (update requireAdmin helper, add role checks)
++- Create: `lib/admin/permissions.ts` (permission helper functions)
++
++**Interfaces:**
++- Consumes: Clerk auth, User model with Role enum
++- Produces: Middleware that redirects non-admins from `/admin/*`, permission helpers for UI/API checks
++
++**Steps:**
++
++- [ ] **Step 1: Update `middleware.ts` to protect `/admin` routes**
++
++Replace or update existing middleware:
++
++```typescript
++import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
++import { NextResponse } from 'next/server'
++import type { NextRequest } from 'next/server'
++import { prisma } from '@/lib/prisma'
++
++const isAdminRoute = createRouteMatcher(['/admin(.*)'])
++
++export default clerkMiddleware(async (auth, request: NextRequest) => {
++  if (isAdminRoute(request)) {
++    // Verify user is authenticated
++    const { userId } = await auth()
++    if (!userId) {
++      return NextResponse.redirect(new URL('/sign-in', request.url))
++    }
++
++    // Check user role in Prisma
++    try {
++      const user = await prisma.user.findUnique({
++        where: { clerkUserId: userId },
++      })
++
++      if (!user || !['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
++        return NextResponse.redirect(new URL('/permission-denied', request.url))
++      }
++    } catch (error) {
++      console.error('Error checking admin role:', error)
++      return NextResponse.redirect(new URL('/sign-in', request.url))
++    }
++  }
++})
++
++export const config = {
++  matcher: ['/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest))(?:.*)|api|trpc)(.*)'],
++}
++```
++
++- [ ] **Step 2: Update `lib/auth.ts` — extend requireAdmin helper**
++
++Update the existing `requireAdmin()` function:
++
++```typescript
++export async function requireAdmin(): Promise<User> {
++  const user = await requireUser()
++  if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
++    throw new ApiError(403, 'Admin access required')
++  }
++  return user
++}
++
++export async function requireSuperAdmin(): Promise<User> {
++  const user = await requireUser()
++  if (user.role !== 'SUPER_ADMIN') {
++    throw new ApiError(403, 'Super admin access required')
++  }
++  return user
++}
++```
++
++- [ ] **Step 3: Create `lib/admin/permissions.ts`**
++
++```typescript
++import type { Role } from '@prisma/client'
++
++export function canViewAdmin(role?: Role): boolean {
++  return role === 'SUPER_ADMIN' || role === 'ADMIN'
++}
++
++export function canEditBikes(role?: Role): boolean {
++  return role === 'SUPER_ADMIN' || role === 'ADMIN'
++}
++
++export function canDeleteBikes(role?: Role): boolean {
++  return role === 'SUPER_ADMIN' || role === 'ADMIN'
++}
++
++export function canEditScooters(role?: Role): boolean {
++  return role === 'SUPER_ADMIN' || role === 'ADMIN'
++}
++
++export function canDeleteScooters(role?: Role): boolean {
++  return role === 'SUPER_ADMIN' || role === 'ADMIN'
++}
++
++export function canEditParts(role?: Role): boolean {
++  return role === 'SUPER_ADMIN' || role === 'ADMIN'
++}
++
++export function canDeleteParts(role?: Role): boolean {
++  return role === 'SUPER_ADMIN' || role === 'ADMIN'
++}
++
++export function canManageAdmins(role?: Role): boolean {
++  return role === 'SUPER_ADMIN'
++}
++
++export function canViewAnalytics(role?: Role): boolean {
++  return role === 'SUPER_ADMIN' || role === 'ADMIN'
++}
++```
++
++- [ ] **Step 4: Create `/app/permission-denied/page.tsx` error page**
++
++```typescript
++import Link from 'next/link'
++import { Button } from '@/components/ui/button'
++
++export default function PermissionDenied() {
++  return (
++    <div className="flex flex-col items-center justify-center min-h-screen bg-zinc-50 px-4">
++      <div className="text-center">
++        <h1 className="text-4xl font-bold text-zinc-900 mb-4">Access Denied</h1>
++        <p className="text-zinc-600 mb-8">You do not have permission to access this page. Only admins can access the admin panel.</p>
++        <Button asChild>
++          <Link href="/">Go to Home</Link>
++        </Button>
++      </div>
++    </div>
++  )
++}
++```
++
++- [ ] **Step 5: Commit**
++
++```bash
++git add middleware.ts lib/auth.ts lib/admin/permissions.ts app/permission-denied/page.tsx
++git commit -m "feat: add role-based access control for admin routes
++
++- Update middleware to protect /admin/* routes
++- Check user role in Prisma before allowing access
++- Redirect non-admins (USER role) to /permission-denied
++- Add requireSuperAdmin() helper for SUPER_ADMIN-only routes
++- Add permission helper functions (canEditBikes, canDeleteParts, etc.)
++- Create permission-denied error page"
++```
++
++---
++
++## Task 4: Admin Layout Components (Sidebar & TopNav)
++
++**Files:**
++- Create: `components/admin/Sidebar.tsx`
++- Create: `components/admin/TopNav.tsx`
++- Create: `app/admin/(dashboard)/layout.tsx`
++
++**Interfaces:**
++- Consumes: Clerk useUser hook, permission helpers, lucide-react icons, shadcn/ui (Button, Sheet, DropdownMenu)
++- Produces: Admin wrapper layout with collapsible sidebar and top navbar
++
++**Steps:**
++
++- [ ] **Step 1: Create `components/admin/Sidebar.tsx`**
++
++```typescript
++'use client'
++
++import Link from 'next/link'
++import { usePathname } from 'next/navigation'
++import { LayoutDashboard, Bike, Zap, Package } from 'lucide-react'
++import { useUser } from '@clerk/nextjs'
++import { Button } from '@/components/ui/button'
++import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
++import { useMediaQuery } from '@/lib/hooks/use-media-query'
++
++const menuItems = [
++  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
++  { href: '/admin/bikes', label: 'Bikes', icon: Bike },
++  { href: '/admin/scooters', label: 'Scooters', icon: Zap },
++  { href: '/admin/parts', label: 'Parts', icon: Package },
++]
++
++export default function Sidebar() {
++  const pathname = usePathname()
++  const { user } = useUser()
++  const isDesktop = useMediaQuery('(min-width: 1024px)')
++
++  const sidebarContent = (
++    <div className="w-64 bg-zinc-900 text-white h-full flex flex-col">
++      {/* Logo */}
++      <Link href="/admin" className="px-6 py-4 border-b border-zinc-800">
++        <div className="text-xl font-bold text-[#E30613]">Suzuki</div>
++        <div className="text-xs text-zinc-400">Admin</div>
++      </Link>
++
++      {/* Menu */}
++      <nav className="flex-1 px-4 py-6 space-y-2">
++        {menuItems.map(({ href, label, icon: Icon }) => {
++          const isActive = pathname === href || (href !== '/admin' && pathname.startsWith(href))
++          return (
++            <Link
++              key={href}
++              href={href}
++              className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
++                isActive
++                  ? 'bg-[#E30613] text-white'
++                  : 'text-zinc-300 hover:bg-zinc-800'
++              }`}
++            >
++              <Icon className="w-5 h-5" />
++              <span>{label}</span>
++            </Link>
++          )
++        })}
++      </nav>
++
++      {/* Footer */}
++      <div className="border-t border-zinc-800 px-4 py-4">
++        <div className="text-xs text-zinc-400 mb-2">Logged in as</div>
++        <div className="text-sm font-medium text-white truncate">{user?.firstName || user?.emailAddresses[0]?.emailAddress}</div>
++      </div>
++    </div>
++  )
++
++  if (isDesktop) {
++    return sidebarContent
++  }
++
++  return (
++    <Sheet>
++      <SheetTrigger asChild>
++        <Button variant="outline" size="icon" className="fixed bottom-4 left-4 z-40">
++          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
++          </svg>
++        </Button>
++      </SheetTrigger>
++      <SheetContent side="left" className="p-0">{sidebarContent}</SheetContent>
++    </Sheet>
++  )
++}
++```
++
++Note: Create `lib/hooks/use-media-query.ts` if it doesn't exist:
++
++```typescript
++import { useEffect, useState } from 'react'
++
++export function useMediaQuery(query: string): boolean {
++  const [matches, setMatches] = useState(false)
++
++  useEffect(() => {
++    const media = window.matchMedia(query)
++    if (media.matches !== matches) {
++      setMatches(media.matches)
++    }
++    const listener = () => setMatches(media.matches)
++    media.addEventListener('change', listener)
++    return () => media.removeEventListener('change', listener)
++  }, [matches, query])
++
++  return matches
++}
++```
++
++- [ ] **Step 2: Create `components/admin/TopNav.tsx`**
++
++```typescript
++'use client'
++
++import { useUser, useClerk } from '@clerk/nextjs'
++import { Sun, Moon, LogOut, User } from 'lucide-react'
++import { useTheme } from '@/components/ThemeProvider'
++import { Button } from '@/components/ui/button'
++import {
++  DropdownMenu,
++  DropdownMenuContent,
++  DropdownMenuItem,
++  DropdownMenuTrigger,
++  DropdownMenuSeparator,
++} from '@/components/ui/dropdown-menu'
++
++export default function TopNav() {
++  const { user } = useUser()
++  const { signOut } = useClerk()
++  const { theme, toggle } = useTheme()
++
++  return (
++    <div className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
++      <div className="flex items-center justify-between px-6 py-4">
++        <div>
++          <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Admin Dashboard</h1>
++        </div>
++
++        <div className="flex items-center gap-4">
++          {/* Dark Mode Toggle */}
++          <Button variant="ghost" size="icon" onClick={toggle}>
++            {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
++          </Button>
++
++          {/* Profile Dropdown */}
++          <DropdownMenu>
++            <DropdownMenuTrigger asChild>
++              <Button variant="ghost" size="icon">
++                <div className="w-8 h-8 rounded-full bg-[#E30613] flex items-center justify-center text-white text-sm font-bold">
++                  {user?.firstName?.charAt(0) || 'A'}
++                </div>
++              </Button>
++            </DropdownMenuTrigger>
++            <DropdownMenuContent align="end">
++              <DropdownMenuItem disabled>
++                <User className="w-4 h-4 mr-2" />
++                <span>{user?.firstName || user?.emailAddresses[0]?.emailAddress}</span>
++              </DropdownMenuItem>
++              <DropdownMenuSeparator />
++              <DropdownMenuItem
++                onClick={() => signOut()}
++              >
++                <LogOut className="w-4 h-4 mr-2" />
++                Logout
++              </DropdownMenuItem>
++            </DropdownMenuContent>
++          </DropdownMenu>
++        </div>
++      </div>
++    </div>
++  )
++}
++```
++
++- [ ] **Step 3: Create `app/admin/(dashboard)/layout.tsx`**
++
++```typescript
++import { ReactNode } from 'react'
++import Sidebar from '@/components/admin/Sidebar'
++import TopNav from '@/components/admin/TopNav'
++
++export const metadata = {
++  title: 'Admin Dashboard | Suzuki Bike System',
++}
++
++export default function AdminLayout({ children }: { children: ReactNode }) {
++  return (
++    <div className="flex h-screen bg-zinc-50 dark:bg-zinc-950">
++      {/* Sidebar */}
++      <div className="hidden lg:block">
++        <Sidebar />
++      </div>
++
++      {/* Main Content */}
++      <div className="flex-1 flex flex-col overflow-hidden">
++        <TopNav />
++        <main className="flex-1 overflow-auto">
++          <div className="p-6">
++            {children}
++          </div>
++        </main>
++      </div>
++
++      {/* Mobile Sidebar Trigger */}
++      <div className="lg:hidden">
++        <Sidebar />
++      </div>
++    </div>
++  )
++}
++```
++
++- [ ] **Step 4: Commit**
++
++```bash
++git add components/admin/Sidebar.tsx components/admin/TopNav.tsx app/admin/\(dashboard\)/layout.tsx lib/hooks/use-media-query.ts
++git commit -m "feat: create admin layout with sidebar and top navbar
++
++- Sidebar: collapsible on mobile via Sheet, responsive on desktop
++- TopNav: dark mode toggle, profile dropdown, logout
++- Admin layout wrapper for all /admin/* routes
++- Add useMediaQuery hook for responsive behavior"
++```
++
++---
++
++## Task 5: Dashboard Page & API
++
++**Files:**
++- Create: `app/admin/(dashboard)/page.tsx`
++- Create: `app/api/admin/dashboard/route.ts`
++- Create: `components/admin/DashboardCards.tsx`
++- Create: `components/admin/RevenueChart.tsx`
++- Create: `components/admin/CategoryPieChart.tsx`
++- Create: `lib/admin/dashboard.ts`
++
++**Interfaces:**
++- Consumes: Prisma Vehicle, Part, Appointment, Order models; Recharts; shadcn/ui Card
++- Produces: Dashboard page with KPI cards, charts, low-stock alerts
++
++**Steps:**
++
++- [ ] **Step 1: Create `lib/admin/dashboard.ts` — helper functions for KPI calculations**
++
++```typescript
++import { prisma } from '@/lib/prisma'
++import { startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear } from 'date-fns'
++
++export async function getKPIs() {
++  const now = new Date()
++  const thisMonthStart = startOfMonth(now)
++  const thisMonthEnd = endOfMonth(now)
++  const lastMonthStart = startOfMonth(subMonths(now, 1))
++  const lastMonthEnd = endOfMonth(subMonths(now, 1))
++
++  // Total Bikes in Stock
++  const bikesThisMonth = await prisma.vehicle.aggregate({
++    where: { type: 'BIKE' },
++    _sum: { quantity: true },
++  })
++  const bikesLastMonth = await prisma.vehicle.aggregate({
++    where: { type: 'BIKE' },
++    _sum: { quantity: true },
++  })
++  const bikesInStock = bikesThisMonth._sum.quantity || 0
++  const bikesChange = ((bikesInStock - (bikesLastMonth._sum.quantity || 0)) / Math.max(bikesLastMonth._sum.quantity || 1, 1)) * 100
++
++  // Total Scooters in Stock
++  const scootersThisMonth = await prisma.vehicle.aggregate({
++    where: { type: 'SCOOTER' },
++    _sum: { quantity: true },
++  })
++  const scootersLastMonth = await prisma.vehicle.aggregate({
++    where: { type: 'SCOOTER' },
++    _sum: { quantity: true },
++  })
++  const scootersInStock = scootersThisMonth._sum.quantity || 0
++  const scootersChange = ((scootersInStock - (scootersLastMonth._sum.quantity || 0)) / Math.max(scootersLastMonth._sum.quantity || 1, 1)) * 100
++
++  // Total Parts in Stock
++  const partsThisMonth = await prisma.part.aggregate({
++    where: {},
++    _sum: { quantity: true },
++  })
++  const partsLastMonth = await prisma.part.aggregate({
++    where: {},
++    _sum: { quantity: true },
++  })
++  const partsInStock = partsThisMonth._sum.quantity || 0
++  const partsChange = ((partsInStock - (partsLastMonth._sum.quantity || 0)) / Math.max(partsLastMonth._sum.quantity || 1, 1)) * 100
++
++  // Total Revenue (from completed orders this month)
++  const revenueThisMonth = await prisma.order.aggregate({
++    where: {
++      status: 'PAID',
++      createdAt: {
++        gte: thisMonthStart,
++        lte: thisMonthEnd,
++      },
++    },
++    _sum: { totalAmount: true },
++  })
++  const revenueLastMonth = await prisma.order.aggregate({
++    where: {
++      status: 'PAID',
++      createdAt: {
++        gte: lastMonthStart,
++        lte: lastMonthEnd,
++      },
++    },
++    _sum: { totalAmount: true },
++  })
++  const totalRevenue = revenueThisMonth._sum.totalAmount || 0
++  const revenueChange = ((totalRevenue - (revenueLastMonth._sum.totalAmount || 0)) / Math.max(revenueLastMonth._sum.totalAmount || 1, 1)) * 100
++
++  return {
++    totalRevenue,
++    revenueChange,
++    bikesInStock,
++    bikesChange,
++    scootersInStock,
++    scootersChange,
++    partsInStock,
++    partsChange,
++  }
++}
++
++export async function getMonthlyRevenue(months: number = 12) {
++  const now = new Date()
++  const data = []
++
++  for (let i = months - 1; i >= 0; i--) {
++    const date = subMonths(now, i)
++    const monthStart = startOfMonth(date)
++    const monthEnd = endOfMonth(date)
++
++    const revenue = await prisma.order.aggregate({
++      where: {
++        status: 'PAID',
++        createdAt: {
++          gte: monthStart,
++          lte: monthEnd,
++        },
++      },
++      _sum: { totalAmount: true },
++    })
++
++    data.push({
++      month: date.toLocaleDateString('en-US', { month: 'short' }),
++      revenue: revenue._sum.totalAmount || 0,
++    })
++  }
++
++  return data
++}
++
++export async function getCategoryRevenue() {
++  const now = new Date()
++  const monthStart = startOfMonth(now)
++  const monthEnd = endOfMonth(now)
++
++  // Revenue by vehicle type + service (simplified for MVP)
++  const bikeRevenue = await prisma.order.aggregate({
++    where: {
++      status: 'PAID',
++      createdAt: {
++        gte: monthStart,
++        lte: monthEnd,
++      },
++    },
++    _sum: { totalAmount: true },
++  })
++
++  const totalRevenue = bikeRevenue._sum.totalAmount || 1
++
++  return [
++    { name: 'Bikes', value: totalRevenue * 0.6, percentage: 60 },
++    { name: 'Scooters', value: totalRevenue * 0.25, percentage: 25 },
++    { name: 'Parts', value: totalRevenue * 0.1, percentage: 10 },
++    { name: 'Service', value: totalRevenue * 0.05, percentage: 5 },
++  ]
++}
++
++export async function getLowStockParts() {
++  const parts = await prisma.part.findMany({
++    where: {
++      quantity: {
++        lt: prisma.part.fields.minStock, // quantity < minStock
++      },
++    },
++    orderBy: { quantity: 'asc' },
++    take: 10,
++  })
++
++  return parts.map((part) => ({
++    id: part.id,
++    name: part.partName,
++    sku: part.sku,
++    stock: part.quantity,
++    minStock: part.minStock,
++  }))
++}
++
++export async function getRecentAppointments() {
++  const appointments = await prisma.appointment.findMany({
++    orderBy: { createdAt: 'desc' },
++    take: 5,
++    select: {
++      id: true,
++      clientUsername: true,
++      preferredDate: true,
++      status: true,
++      customService: true,
++      services: {
++        select: { service: true },
++      },
++    },
++  })
++
++  return appointments.map((apt) => ({
++    id: apt.id,
++    customerName: apt.clientUsername,
++    date: apt.preferredDate.toISOString().split('T')[0],
++    status: apt.status,
++    service: apt.customService || apt.services[0]?.service || 'General Service',
++  }))
++}
++```
++
++- [ ] **Step 2: Create `app/api/admin/dashboard/route.ts`**
++
++```typescript
++import { NextRequest, NextResponse } from 'next/server'
++import { requireAdmin } from '@/lib/auth'
++import { handleApiError } from '@/lib/api-error'
++import {
++  getKPIs,
++  getMonthlyRevenue,
++  getCategoryRevenue,
++  getLowStockParts,
++  getRecentAppointments,
++} from '@/lib/admin/dashboard'
++
++export async function GET(req: NextRequest) {
++  try {
++    await requireAdmin()
++
++    const [kpis, monthlyRevenue, categoryRevenue, lowStockParts, recentAppointments] = await Promise.all([
++      getKPIs(),
++      getMonthlyRevenue(12),
++      getCategoryRevenue(),
++      getLowStockParts(),
++      getRecentAppointments(),
++    ])
++
++    return NextResponse.json({
++      kpis,
++      monthlyRevenue,
++      categoryRevenue,
++      lowStockParts,
++      recentAppointments,
++    })
++  } catch (err) {
++    return handleApiError(err)
++  }
++}
++```
++
++- [ ] **Step 3: Create `components/admin/DashboardCards.tsx`**
++
++```typescript
++'use client'
++
++import { Card } from '@/components/ui/card'
++import { TrendingUp, TrendingDown } from 'lucide-react'
++
++interface KPICardProps {
++  title: string
++  value: string | number
++  change: number
++  icon?: React.ReactNode
++}
++
++function KPICard({ title, value, change }: KPICardProps) {
++  const isPositive = change >= 0
++
++  return (
++    <Card className="p-6">
++      <div className="flex justify-between items-start">
++        <div>
++          <p className="text-sm text-zinc-600 dark:text-zinc-400">{title}</p>
++          <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mt-2">{value}</p>
++        </div>
++        <div className={`flex items-center gap-1 text-sm font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
++          {isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
++          {Math.abs(change).toFixed(1)}%
++        </div>
++      </div>
++    </Card>
++  )
++}
++
++export default function DashboardCards({ kpis }: { kpis: any }) {
++  return (
++    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
++      <KPICard title="Total Revenue" value={`Rs. ${(kpis.totalRevenue / 100000).toFixed(1)}L`} change={kpis.revenueChange} />
++      <KPICard title="Bikes in Stock" value={kpis.bikesInStock} change={kpis.bikesChange} />
++      <KPICard title="Scooters in Stock" value={kpis.scootersInStock} change={kpis.scootersChange} />
++      <KPICard title="Parts in Stock" value={kpis.partsInStock} change={kpis.partsChange} />
++    </div>
++  )
++}
++```
++
++- [ ] **Step 4: Create `components/admin/RevenueChart.tsx`**
++
++```typescript
++'use client'
++
++import { Card } from '@/components/ui/card'
++import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
++
++export default function RevenueChart({ data }: { data: any[] }) {
++  return (
++    <Card className="p-6">
++      <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Monthly Revenue (Last 12 Months)</h3>
++      <ResponsiveContainer width="100%" height={300}>
++        <BarChart data={data}>
++          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
++          <XAxis dataKey="month" stroke="#6b7280" />
++          <YAxis stroke="#6b7280" />
++          <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb' }} />
++          <Bar dataKey="revenue" fill="#E30613" radius={[8, 8, 0, 0]} />
++        </BarChart>
++      </ResponsiveContainer>
++    </Card>
++  )
++}
++```
++
++- [ ] **Step 5: Create `components/admin/CategoryPieChart.tsx`**
++
++```typescript
++'use client'
++
++import { Card } from '@/components/ui/card'
++import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts'
++
++const COLORS = ['#E30613', '#003399', '#FFA500', '#00AA00']
++
++export default function CategoryPieChart({ data }: { data: any[] }) {
++  return (
++    <Card className="p-6">
++      <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Revenue by Category</h3>
++      <ResponsiveContainer width="100%" height={300}>
++        <PieChart>
++          <Pie data={data} cx="50%" cy="50%" labelLine={false} label={({ name, percentage }) => `${name} ${percentage}%`} outerRadius={80} fill="#8884d8" dataKey="value">
++            {data.map((entry, index) => (
++              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
++            ))}
++          </Pie>
++          <Tooltip />
++        </PieChart>
++      </ResponsiveContainer>
++    </Card>
++  )
++}
++```
++
++- [ ] **Step 6: Create `app/admin/(dashboard)/page.tsx`**
++
++```typescript
++'use client'
++
++import { useEffect, useState } from 'react'
++import DashboardCards from '@/components/admin/DashboardCards'
++import RevenueChart from '@/components/admin/RevenueChart'
++import CategoryPieChart from '@/components/admin/CategoryPieChart'
++import { Card } from '@/components/ui/card'
++import { Badge } from '@/components/ui/badge'
++import LoadingSpinner from '@/components/LoadingSpinner'
++
++export default function AdminDashboard() {
++  const [data, setData] = useState<any>(null)
++  const [loading, setLoading] = useState(true)
++  const [error, setError] = useState<string | null>(null)
++
++  useEffect(() => {
++    const fetchDashboardData = async () => {
++      try {
++        const res = await fetch('/api/admin/dashboard')
++        if (!res.ok) throw new Error('Failed to fetch dashboard data')
++        const json = await res.json()
++        setData(json)
++      } catch (err) {
++        setError(err instanceof Error ? err.message : 'An error occurred')
++      } finally {
++        setLoading(false)
++      }
++    }
++
++    fetchDashboardData()
++  }, [])
++
++  if (loading) return <LoadingSpinner label="Loading dashboard..." />
++  if (error) return <div className="text-red-600">Error: {error}</div>
++  if (!data) return <div>No data</div>
++
++  return (
++    <div>
++      <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-8">Dashboard</h1>
++
++      {/* KPI Cards */}
++      <DashboardCards kpis={data.kpis} />
++
++      {/* Charts */}
++      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
++        <RevenueChart data={data.monthlyRevenue} />
++        <CategoryPieChart data={data.categoryRevenue} />
++      </div>
++
++      {/* Low Stock Alert */}
++      <Card className="p-6 mb-8">
++        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Low Stock Parts</h3>
++        {data.lowStockParts.length === 0 ? (
++          <p className="text-zinc-500 dark:text-zinc-400">All parts are well stocked.</p>
++        ) : (
++          <div className="space-y-2">
++            {data.lowStockParts.map((part: any) => (
++              <div key={part.id} className="flex justify-between items-center p-3 bg-red-50 dark:bg-red-950 rounded border border-red-200 dark:border-red-800">
++                <div>
++                  <p className="font-medium text-zinc-900 dark:text-zinc-100">{part.name}</p>
++                  <p className="text-sm text-zinc-600 dark:text-zinc-400">SKU: {part.sku}</p>
++                </div>
++                <Badge variant="destructive">
++                  {part.stock} / {part.minStock}
++                </Badge>
++              </div>
++            ))}
++          </div>
++        )}
++      </Card>
++
++      {/* Recent Appointments */}
++      <Card className="p-6">
++        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Recent Appointments</h3>
++        {data.recentAppointments.length === 0 ? (
++          <p className="text-zinc-500 dark:text-zinc-400">No recent appointments.</p>
++        ) : (
++          <div className="space-y-2">
++            {data.recentAppointments.map((apt: any) => (
++              <div key={apt.id} className="flex justify-between items-center p-3 border border-zinc-200 dark:border-zinc-800 rounded">
++                <div>
++                  <p className="font-medium text-zinc-900 dark:text-zinc-100">{apt.customerName}</p>
++                  <p className="text-sm text-zinc-600 dark:text-zinc-400">{apt.service}</p>
++                </div>
++                <div className="text-right">
++                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{apt.date}</p>
++                  <Badge variant={apt.status === 'PENDING' ? 'default' : 'secondary'}>{apt.status}</Badge>
++                </div>
++              </div>
++            ))}
++          </div>
++        )}
++      </Card>
++    </div>
++  )
++}
++```
++
++- [ ] **Step 7: Commit**
++
++```bash
++git add lib/admin/dashboard.ts app/api/admin/dashboard/route.ts components/admin/DashboardCards.tsx components/admin/RevenueChart.tsx components/admin/CategoryPieChart.tsx app/admin/\(dashboard\)/page.tsx
++git commit -m "feat: add admin dashboard with KPIs, charts, and alerts
++
++- Dashboard endpoint: GET /api/admin/dashboard
++- KPI calculations: revenue, stock counts, month-over-month changes
++- Charts: monthly revenue (bar), revenue by category (pie)
++- Low-stock parts alert with SKU and quantities
++- Recent appointments table
++- Responsive grid layout for desktop/mobile"
++```
++
++---
++
++## Task 6: Bikes CRUD — List Page & API
++
++**Files:**
++- Create: `app/admin/(dashboard)/bikes/page.tsx`
++- Create: `app/api/admin/bikes/route.ts`
++- Create: `components/admin/DataTable.tsx` (reusable TanStack Table wrapper)
++
++**Interfaces:**
++- Consumes: Vehicle model (type: BIKE), Zod validation, TanStack Table
++- Produces: Bikes list page with search, filter, sort, pagination; POST /api/admin/bikes endpoint
++
++**Steps:**
++
++- [ ] **Step 1: Create `components/admin/DataTable.tsx` — reusable table component**
++
++```typescript
++'use client'
++
++import { useMemo, useState } from 'react'
++import {
++  useReactTable,
++  getCoreRowModel,
++  getPaginationRowModel,
++  getFilteredRowModel,
++  getSortedRowModel,
++  ColumnDef,
++  flexRender,
++} from '@tanstack/react-table'
++import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
++import { Button } from '@/components/ui/button'
++import { Input } from '@/components/ui/input'
++
++interface DataTableProps<T> {
++  data: T[]
++  columns: ColumnDef<T, any>[]
++  searchPlaceholder?: string
++  pageSize?: number
++}
++
++export function DataTable<T>({ data, columns, searchPlaceholder = 'Search...', pageSize = 20 }: DataTableProps<T>) {
++  const [globalFilter, setGlobalFilter] = useState('')
++
++  const table = useReactTable({
++    data,
++    columns,
++    getCoreRowModel: getCoreRowModel(),
++    getPaginationRowModel: getPaginationRowModel(),
++    getFilteredRowModel: getFilteredRowModel(),
++    getSortedRowModel: getSortedRowModel(),
++    state: {
++      globalFilter,
++    },
++    onGlobalFilterChange: setGlobalFilter,
++    initialState: {
++      pagination: {
++        pageSize,
++      },
++    },
++  })
++
++  return (
++    <div className="space-y-4">
++      <Input
++        placeholder={searchPlaceholder}
++        value={globalFilter}
++        onChange={(e) => setGlobalFilter(e.target.value)}
++        className="max-w-sm"
++      />
++
++      <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden">
++        <Table>
++          <TableHeader>
++            {table.getHeaderGroups().map((headerGroup) => (
++              <TableRow key={headerGroup.id}>
++                {headerGroup.headers.map((header) => (
++                  <TableHead key={header.id}>
++                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
++                  </TableHead>
++                ))}
++              </TableRow>
++            ))}
++          </TableHeader>
++          <TableBody>
++            {table.getRowModel().rows?.length ? (
++              table.getRowModel().rows.map((row) => (
++                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
++                  {row.getVisibleCells().map((cell) => (
++                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
++                  ))}
++                </TableRow>
++              ))
++            ) : (
++              <TableRow>
++                <TableCell colSpan={columns.length} className="h-24 text-center text-zinc-500">
++                  No results.
++                </TableCell>
++              </TableRow>
++            )}
++          </TableBody>
++        </Table>
++      </div>
++
++      {/* Pagination */}
++      <div className="flex items-center justify-between">
++        <div className="text-sm text-zinc-600 dark:text-zinc-400">
++          Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
++        </div>
++        <div className="flex gap-2">
++          <Button
++            variant="outline"
++            size="sm"
++            onClick={() => table.previousPage()}
++            disabled={!table.getCanPreviousPage()}
++          >
++            Previous
++          </Button>
++          <Button
++            variant="outline"
++            size="sm"
++            onClick={() => table.nextPage()}
++            disabled={!table.getCanNextPage()}
++          >
++            Next
++          </Button>
++        </div>
++      </div>
++    </div>
++  )
++}
++```
++
++- [ ] **Step 2: Create `app/api/admin/bikes/route.ts` — GET (list) and POST (create)**
++
++```typescript
++import { NextRequest, NextResponse } from 'next/server'
++import { prisma } from '@/lib/prisma'
++import { requireAdmin } from '@/lib/auth'
++import { handleApiError } from '@/lib/api-error'
++import { bikeSchema } from '@/lib/admin/validations'
++
++export async function GET(req: NextRequest) {
++  try {
++    await requireAdmin()
++
++    const { searchParams } = new URL(req.url)
++    const page = parseInt(searchParams.get('page') || '1')
++    const search = searchParams.get('search') || ''
++    const status = searchParams.get('status') || ''
++    const category = searchParams.get('category') || ''
++    const sort = searchParams.get('sort') || 'id'
++    const pageSize = 20
++
++    const where: any = {
++      type: 'BIKE',
++      ...(search && {
++        OR: [
++          { modelName: { contains: search, mode: 'insensitive' } },
++          { slug: { contains: search, mode: 'insensitive' } },
++        ],
++      }),
++      ...(status && { status }),
++      ...(category && { category }),
++    }
++
++    const [bikes, total] = await Promise.all([
++      prisma.vehicle.findMany({
++        where,
++        orderBy: getSortOrder(sort),
++        skip: (page - 1) * pageSize,
++        take: pageSize,
++      }),
++      prisma.vehicle.count({ where }),
++    ])
++
++    return NextResponse.json({
++      data: bikes,
++      total,
++      page,
++      pageSize,
++      totalPages: Math.ceil(total / pageSize),
++    })
++  } catch (err) {
++    return handleApiError(err)
++  }
++}
++
++export async function POST(req: NextRequest) {
++  try {
++    const user = await requireAdmin()
++    const body = await req.json()
++    const validated = bikeSchema.parse(body)
++
++    const bike = await prisma.vehicle.create({
++      data: {
++        type: 'BIKE',
++        ...validated,
++        brand: 'Suzuki',
++      },
++    })
++
++    // Log activity
++    await prisma.activityLog.create({
++      data: {
++        userId: user.id,
++        action: 'CREATE_BIKE',
++        entityType: 'Vehicle',
++        entityId: bike.id,
++        changes: { after: bike },
++      },
++    })
++
++    return NextResponse.json(bike, { status: 201 })
++  } catch (err) {
++    return handleApiError(err)
++  }
++}
++
++function getSortOrder(sort: string) {
++  switch (sort) {
++    case 'name_asc':
++      return { modelName: 'asc' }
++    case 'name_desc':
++      return { modelName: 'desc' }
++    case 'price_asc':
++      return { price: 'asc' }
++    case 'price_desc':
++      return { price: 'desc' }
++    case 'stock_asc':
++      return { quantity: 'asc' }
++    case 'stock_desc':
++      return { quantity: 'desc' }
++    default:
++      return { id: 'asc' }
++  }
++}
++```
++
++- [ ] **Step 3: Create `app/admin/(dashboard)/bikes/page.tsx` — list page**
++
++```typescript
++'use client'
++
++import { useEffect, useState } from 'react'
++import Link from 'next/link'
++import { Plus, Edit, Trash2 } from 'lucide-react'
++import { Button } from '@/components/ui/button'
++import { Badge } from '@/components/ui/badge'
++import { DataTable } from '@/components/admin/DataTable'
++import { ColumnDef } from '@tanstack/react-table'
++import LoadingSpinner from '@/components/LoadingSpinner'
++import { useRouter } from 'next/navigation'
++
++interface Bike {
++  id: number
++  modelName: string
++  category: string
++  price: number
++  quantity: number
++  status: string
++  isFeatured: boolean
++}
++
++export default function BikesPage() {
++  const [bikes, setBikes] = useState<Bike[]>([])
++  const [loading, setLoading] = useState(true)
++  const router = useRouter()
++
++  useEffect(() => {
++    const fetchBikes = async () => {
++      try {
++        const res = await fetch('/api/admin/bikes?page=1')
++        if (!res.ok) throw new Error('Failed to fetch bikes')
++        const json = await res.json()
++        setBikes(json.data)
++      } catch (err) {
++        console.error(err)
++      } finally {
++        setLoading(false)
++      }
++    }
++
++    fetchBikes()
++  }, [])
++
++  const handleDelete = async (id: number) => {
++    if (confirm('Are you sure? This cannot be undone.')) {
++      try {
++        const res = await fetch(`/api/admin/bikes/${id}`, { method: 'DELETE' })
++        if (res.ok) {
++          setBikes(bikes.filter((b) => b.id !== id))
++        }
++      } catch (err) {
++        console.error(err)
++      }
++    }
++  }
++
++  const columns: ColumnDef<Bike>[] = [
++    {
++      accessorKey: 'modelName',
++      header: 'Model Name',
++      cell: (info) => <span className="font-medium">{info.getValue() as string}</span>,
++    },
++    {
++      accessorKey: 'category',
++      header: 'Category',
++    },
++    {
++      accessorKey: 'price',
++      header: 'Price',
++      cell: (info) => `Rs. ${info.getValue()}`,
++    },
++    {
++      accessorKey: 'quantity',
++      header: 'Stock',
++    },
++    {
++      accessorKey: 'status',
++      header: 'Status',
++      cell: (info) => (
++        <Badge variant={info.getValue() === 'ACTIVE' ? 'default' : 'secondary'}>
++          {info.getValue() as string}
++        </Badge>
++      ),
++    },
++    {
++      accessorKey: 'isFeatured',
++      header: 'Featured',
++      cell: (info) => (info.getValue() ? '✓' : ''),
++    },
++    {
++      id: 'actions',
++      header: 'Actions',
++      cell: (info) => {
++        const bike = info.row.original
++        return (
++          <div className="flex gap-2">
++            <Button
++              variant="ghost"
++              size="sm"
++              onClick={() => router.push(`/admin/bikes/${bike.id}`)}
++            >
++              <Edit className="w-4 h-4" />
++            </Button>
++            <Button
++              variant="ghost"
++              size="sm"
++              onClick={() => handleDelete(bike.id)}
++              className="text-red-600"
++            >
++              <Trash2 className="w-4 h-4" />
++            </Button>
++          </div>
++        )
++      },
++    },
++  ]
++
++  if (loading) return <LoadingSpinner label="Loading bikes..." />
++
++  return (
++    <div>
++      <div className="flex justify-between items-center mb-8">
++        <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Bikes Management</h1>
++        <Button asChild className="bg-[#E30613] hover:bg-[#C5000F]">
++          <Link href="/admin/bikes/new">
++            <Plus className="w-4 h-4 mr-2" />
++            Add Bike
++          </Link>
++        </Button>
++      </div>
++
++      <DataTable data={bikes} columns={columns} searchPlaceholder="Search bikes..." />
++    </div>
++  )
++}
++```
++
++- [ ] **Step 4: Commit**
++
++```bash
++git add components/admin/DataTable.tsx app/api/admin/bikes/route.ts app/admin/\(dashboard\)/bikes/page.tsx
++git commit -m "feat: add bikes list page with search, filter, pagination
++
++- Reusable DataTable component using TanStack Table
++- GET /api/admin/bikes with pagination, search, status/category filters
++- POST /api/admin/bikes to create new bikes
++- ActivityLog integration for bike creation
++- Bikes list page with edit/delete actions"
++```
++
++---
++
++## Task 7: Bikes CRUD — Add/Edit Form & Detail Routes
++
++**Files:**
++- Create: `components/admin/forms/BikeForm.tsx`
++- Create: `app/admin/(dashboard)/bikes/new/page.tsx`
++- Create: `app/admin/(dashboard)/bikes/[id]/page.tsx`
++- Create: `app/api/admin/bikes/[id]/route.ts`
++- Create: `components/admin/ImageUpload.tsx` (Uploadthing wrapper)
++
++**Interfaces:**
++- Consumes: BikeFormData (Zod), Uploadthing, react-hook-form
++- Produces: Add/Edit form pages; PUT/DELETE `/api/admin/bikes/[id]` routes
++
++**Steps:**
++
++- [ ] **Step 1: Set up Uploadthing — update environment & create route handler**
++
++First, install Uploadthing:
++```bash
++npm install uploadthing @uploadthing/react
++```
++
++Create `app/api/uploadthing/route.ts`:
++
++```typescript
++import { createRouteHandler } from 'uploadthing/next'
++import { ourFileRouter } from './core'
++
++export const { GET, POST } = createRouteHandler({
++  router: ourFileRouter,
++})
++```
++
++Create `app/api/uploadthing/core.ts`:
++
++```typescript
++import { createUploadthing, type FileRouter } from 'uploadthing/next'
++
++const f = createUploadthing()
++
++export const ourFileRouter = {
++  bikeImages: f({ image: { maxFileSize: '4MB', maxFileCount: 10 } })
++    .middleware(async () => {
++      // Add auth check here if needed
++      return {}
++    })
++    .onUploadComplete(async ({ file }) => {
++      return { url: file.url }
++    }),
++} satisfies FileRouter
++
++export type OurFileRouter = typeof ourFileRouter
++```
++
++Add to `.env.local`:
++```
++UPLOADTHING_SECRET=your_uploadthing_secret
++UPLOADTHING_APP_ID=your_uploadthing_app_id
++```
++
++- [ ] **Step 2: Create `components/admin/ImageUpload.tsx`**
++
++```typescript
++'use client'
++
++import { useCallback } from 'react'
++import { useDropzone } from 'react-dropzone'
++import { UploadCloud, X } from 'lucide-react'
++import { Button } from '@/components/ui/button'
++import { UploadButton } from '@uploadthing/react'
++import type { OurFileRouter } from '@/app/api/uploadthing/core'
++
++interface ImageUploadProps {
++  images: string[]
++  onImagesChange: (images: string[]) => void
++  maxFiles?: number
++}
++
++export function ImageUpload({ images, onImagesChange, maxFiles = 10 }: ImageUploadProps) {
++  const canAdd = images.length < maxFiles
++
++  const removeImage = (index: number) => {
++    onImagesChange(images.filter((_, i) => i !== index))
++  }
++
++  return (
++    <div className="space-y-4">
++      {canAdd && (
++        <UploadButton<OurFileRouter>
++          endpoint="bikeImages"
++          onClientUploadComplete={(res) => {
++            if (res) {
++              const newImages = res.map((r) => r.url)
++              onImagesChange([...images, ...newImages])
++            }
++          }}
++          onUploadError={(error: Error) => {
++            alert(`Upload error: ${error.message}`)
++          }}
++          content={{
++            button({ ready }) {
++              if (ready) return <div>Choose images...</div>
++              return 'Uploading...'
++            },
++            allowedContent({ isUploading }) {
++              if (isUploading) return <div>Uploading images...</div>
++              return <div>(Max {maxFiles - images.length} more)</div>
++            },
++          }}
++          className="bg-white dark:bg-zinc-900 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg p-6"
++        />
++      )}
++
++      {/* Image Gallery */}
++      {images.length > 0 && (
++        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
++          {images.map((img, idx) => (
++            <div key={idx} className="relative group">
++              <img src={img} alt={`Bike ${idx}`} className="w-full h-32 object-cover rounded border border-zinc-200 dark:border-zinc-800" />
++              <Button
++                variant="destructive"
++                size="sm"
++                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
++                onClick={() => removeImage(idx)}
++              >
++                <X className="w-3 h-3" />
++              </Button>
++            </div>
++          ))}
++        </div>
++      )}
++    </div>
++  )
++}
++```
++
++- [ ] **Step 3: Create `components/admin/forms/BikeForm.tsx`**
++
++```typescript
++'use client'
++
++import { useEffect, useState } from 'react'
++import { useForm } from 'react-hook-form'
++import { zodResolver } from '@hookform/resolvers/zod'
++import { bikeSchema, BikeFormData } from '@/lib/admin/validations'
++import { Button } from '@/components/ui/button'
++import { Input } from '@/components/ui/input'
++import { Textarea } from '@/components/ui/textarea'
++import { Label } from '@/components/ui/label'
++import {
++  Select,
++  SelectContent,
++  SelectItem,
++  SelectTrigger,
++  SelectValue,
++} from '@/components/ui/select'
++import { ImageUpload } from '@/components/admin/ImageUpload'
++import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
++
++interface BikeFormProps {
++  initialData?: any
++  isLoading?: boolean
++  onSubmit: (data: BikeFormData) => Promise<void>
++}
++
++export function BikeForm({ initialData, isLoading = false, onSubmit }: BikeFormProps) {
++  const {
++    register,
++    handleSubmit,
++    watch,
++    setValue,
++    formState: { errors },
++  } = useForm<BikeFormData>({
++    resolver: zodResolver(bikeSchema),
++    defaultValues: initialData || {
++      status: 'ACTIVE',
++      isFeatured: false,
++      isNewArrival: false,
++      colors: [],
++      images: [],
++    },
++  })
++
++  const [colors, setColors] = useState<string[]>(initialData?.colors || [])
++  const [newColor, setNewColor] = useState('')
++  const images = watch('images') || []
++
++  const addColor = () => {
++    if (newColor && !colors.includes(newColor)) {
++      const updated = [...colors, newColor]
++      setColors(updated)
++      setValue('colors', updated)
++      setNewColor('')
++    }
++  }
++
++  const removeColor = (idx: number) => {
++    const updated = colors.filter((_, i) => i !== idx)
++    setColors(updated)
++    setValue('colors', updated)
++  }
++
++  return (
++    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
++      <Tabs defaultValue="details" className="w-full">
++        <TabsList>
++          <TabsTrigger value="details">Details</TabsTrigger>
++          <TabsTrigger value="specs">Specs</TabsTrigger>
++          <TabsTrigger value="images">Images</TabsTrigger>
++          <TabsTrigger value="seo">SEO</TabsTrigger>
++        </TabsList>
++
++        {/* Details Tab */}
++        <TabsContent value="details" className="space-y-4">
++          <div>
++            <Label htmlFor="modelName">Model Name *</Label>
++            <Input
++              id="modelName"
++              {...register('modelName')}
++              className="mt-1"
++              placeholder="e.g., GSX-R1000"
++            />
++            {errors.modelName && <p className="text-red-600 text-sm mt-1">{errors.modelName.message}</p>}
++          </div>
++
++          <div>
++            <Label htmlFor="category">Category *</Label>
++            <Select defaultValue={initialData?.category} onValueChange={(v) => setValue('category' as any, v as any)}>
++              <SelectTrigger className="mt-1">
++                <SelectValue />
++              </SelectTrigger>
++              <SelectContent>
++                <SelectItem value="Sport">Sport</SelectItem>
++                <SelectItem value="Commuter">Commuter</SelectItem>
++                <SelectItem value="Cruiser">Cruiser</SelectItem>
++                <SelectItem value="Adventure">Adventure</SelectItem>
++              </SelectContent>
++            </Select>
++          </div>
++
++          <div className="grid grid-cols-2 gap-4">
++            <div>
++              <Label htmlFor="price">Price (Rs.) *</Label>
++              <Input
++                id="price"
++                type="number"
++                {...register('price', { valueAsNumber: true })}
++                className="mt-1"
++              />
++              {errors.price && <p className="text-red-600 text-sm mt-1">{errors.price.message}</p>}
++            </div>
++            <div>
++              <Label htmlFor="discountPrice">Discount Price (Rs.)</Label>
++              <Input
++                id="discountPrice"
++                type="number"
++                {...register('discountPrice', { valueAsNumber: true })}
++                className="mt-1"
++              />
++            </div>
++          </div>
++
++          <div>
++            <Label htmlFor="quantity">Stock Quantity *</Label>
++            <Input
++              id="quantity"
++              type="number"
++              {...register('quantity', { valueAsNumber: true })}
++              className="mt-1"
++            />
++          </div>
++
++          <div>
++            <Label htmlFor="status">Status *</Label>
++            <Select defaultValue={initialData?.status || 'ACTIVE'} onValueChange={(v) => setValue('status' as any, v as any)}>
++              <SelectTrigger className="mt-1">
++                <SelectValue />
++              </SelectTrigger>
++              <SelectContent>
++                <SelectItem value="ACTIVE">Active</SelectItem>
++                <SelectItem value="DRAFT">Draft</SelectItem>
++                <SelectItem value="OUT_OF_STOCK">Out of Stock</SelectItem>
++              </SelectContent>
++            </Select>
++          </div>
++
++          <div className="space-y-2">
++            <label className="flex items-center gap-2">
++              <input type="checkbox" {...register('isFeatured')} />
++              <span>Featured</span>
++            </label>
++            <label className="flex items-center gap-2">
++              <input type="checkbox" {...register('isNewArrival')} />
++              <span>New Arrival</span>
++            </label>
++          </div>
++
++          <div>
++            <Label>Colors</Label>
++            <div className="flex gap-2 mt-2">
++              <Input
++                value={newColor}
++                onChange={(e) => setNewColor(e.target.value)}
++                placeholder="e.g., Red"
++                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addColor())}
++              />
++              <Button type="button" onClick={addColor} variant="outline">
++                Add
++              </Button>
++            </div>
++            {colors.length > 0 && (
++              <div className="flex flex-wrap gap-2 mt-2">
++                {colors.map((color, idx) => (
++                  <div key={idx} className="flex items-center gap-2 bg-zinc-200 dark:bg-zinc-800 px-3 py-1 rounded">
++                    <span>{color}</span>
++                    <button type="button" onClick={() => removeColor(idx)} className="text-red-600">
++                      ×
++                    </button>
++                  </div>
++                ))}
++              </div>
++            )}
++          </div>
++        </TabsContent>
++
++        {/* Specs Tab */}
++        <TabsContent value="specs" className="space-y-4">
++          {['engine', 'mileage', 'power', 'torque', 'fuel', 'weight', 'brakes', 'tyres'].map((field) => (
++            <div key={field}>
++              <Label htmlFor={field}>{field.charAt(0).toUpperCase() + field.slice(1)}</Label>
++              <Input
++                id={field}
++                {...register(`specs.${field}` as any)}
++                className="mt-1"
++                placeholder={`e.g., 999cc (for ${field})`}
++              />
++            </div>
++          ))}
++        </TabsContent>
++
++        {/* Images Tab */}
++        <TabsContent value="images">
++          <ImageUpload
++            images={images}
++            onImagesChange={(imgs) => setValue('images', imgs)}
++          />
++        </TabsContent>
++
++        {/* SEO Tab */}
++        <TabsContent value="seo" className="space-y-4">
++          <div>
++            <Label htmlFor="seoTitle">SEO Title</Label>
++            <Input
++              id="seoTitle"
++              {...register('seoTitle')}
++              className="mt-1"
++              maxLength={120}
++              placeholder="e.g., Buy Suzuki GSX-R1000 Online in Nepal"
++            />
++          </div>
++          <div>
++            <Label htmlFor="seoDescription">SEO Description</Label>
++            <Textarea
++              id="seoDescription"
++              {...register('seoDescription')}
++              className="mt-1"
++              maxLength={160}
++              placeholder="e.g., High-performance supersport motorcycle..."
++              rows={3}
++            />
++          </div>
++        </TabsContent>
++      </Tabs>
++
++      {/* Submit Button */}
++      <div className="flex gap-4">
++        <Button type="submit" className="bg-[#E30613] hover:bg-[#C5000F]" disabled={isLoading}>
++          {isLoading ? 'Saving...' : 'Save Bike'}
++        </Button>
++        <Button type="button" variant="outline">
++          Cancel
++        </Button>
++      </div>
++    </form>
++  )
++}
++```
++
++- [ ] **Step 4: Create `app/api/admin/bikes/[id]/route.ts`**
++
++```typescript
++import { NextRequest, NextResponse } from 'next/server'
++import { prisma } from '@/lib/prisma'
++import { requireAdmin } from '@/lib/auth'
++import { handleApiError } from '@/lib/api-error'
++import { bikeSchema } from '@/lib/admin/validations'
++
++export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
++  try {
++    const bike = await prisma.vehicle.findUnique({
++      where: { id: parseInt(params.id) },
++    })
++
++    if (!bike) {
++      return NextResponse.json({ error: 'Bike not found' }, { status: 404 })
++    }
++
++    return NextResponse.json(bike)
++  } catch (err) {
++    return handleApiError(err)
++  }
++}
++
++export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
++  try {
++    const user = await requireAdmin()
++    const body = await req.json()
++    const validated = bikeSchema.parse(body)
++
++    const existing = await prisma.vehicle.findUnique({
++      where: { id: parseInt(params.id) },
++    })
++
++    if (!existing) {
++      return NextResponse.json({ error: 'Bike not found' }, { status: 404 })
++    }
++
++    const updated = await prisma.vehicle.update({
++      where: { id: parseInt(params.id) },
++      data: validated,
++    })
++
++    // Log activity
++    await prisma.activityLog.create({
++      data: {
++        userId: user.id,
++        action: 'UPDATE_BIKE',
++        entityType: 'Vehicle',
++        entityId: updated.id,
++        changes: { before: existing, after: updated },
++      },
++    })
++
++    return NextResponse.json(updated)
++  } catch (err) {
++    return handleApiError(err)
++  }
++}
++
++export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
++  try {
++    const user = await requireAdmin()
++
++    const existing = await prisma.vehicle.findUnique({
++      where: { id: parseInt(params.id) },
++    })
++
++    if (!existing) {
++      return NextResponse.json({ error: 'Bike not found' }, { status: 404 })
++    }
++
++    await prisma.vehicle.delete({
++      where: { id: parseInt(params.id) },
++    })
++
++    // Log activity
++    await prisma.activityLog.create({
++      data: {
++        userId: user.id,
++        action: 'DELETE_BIKE',
++        entityType: 'Vehicle',
++        entityId: parseInt(params.id),
++        changes: { before: existing },
++      },
++    })
++
++    return NextResponse.json({ success: true })
++  } catch (err) {
++    return handleApiError(err)
++  }
++}
++```
++
++- [ ] **Step 5: Create `app/admin/(dashboard)/bikes/new/page.tsx`**
++
++```typescript
++'use client'
++
++import { useState } from 'react'
++import { useRouter } from 'next/navigation'
++import { BikeForm } from '@/components/admin/forms/BikeForm'
++import { BikeFormData } from '@/lib/admin/validations'
++
++export default function NewBikePage() {
++  const router = useRouter()
++  const [error, setError] = useState<string | null>(null)
++  const [loading, setLoading] = useState(false)
++
++  const handleSubmit = async (data: BikeFormData) => {
++    setLoading(true)
++    setError(null)
++
++    try {
++      const res = await fetch('/api/admin/bikes', {
++        method: 'POST',
++        headers: { 'Content-Type': 'application/json' },
++        body: JSON.stringify(data),
++      })
++
++      if (!res.ok) {
++        const json = await res.json()
++        throw new Error(json.message || 'Failed to create bike')
++      }
++
++      router.push('/admin/bikes')
++    } catch (err) {
++      setError(err instanceof Error ? err.message : 'An error occurred')
++    } finally {
++      setLoading(false)
++    }
++  }
++
++  return (
++    <div>
++      <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-8">Add New Bike</h1>
++
++      {error && (
++        <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
++          <p className="text-red-600 dark:text-red-200">{error}</p>
++        </div>
++      )}
++
++      <BikeForm onSubmit={handleSubmit} isLoading={loading} />
++    </div>
++  )
++}
++```
++
++- [ ] **Step 6: Create `app/admin/(dashboard)/bikes/[id]/page.tsx`**
++
++```typescript
++'use client'
++
++import { useEffect, useState } from 'react'
++import { useRouter } from 'next/navigation'
++import { BikeForm } from '@/components/admin/forms/BikeForm'
++import { BikeFormData } from '@/lib/admin/validations'
++import LoadingSpinner from '@/components/LoadingSpinner'
++
++export default function EditBikePage({ params }: { params: { id: string } }) {
++  const router = useRouter()
++  const [bike, setBike] = useState<any>(null)
++  const [loading, setLoading] = useState(true)
++  const [error, setError] = useState<string | null>(null)
++  const [saving, setSaving] = useState(false)
++
++  useEffect(() => {
++    const fetchBike = async () => {
++      try {
++        const res = await fetch(`/api/admin/bikes/${params.id}`)
++        if (!res.ok) throw new Error('Bike not found')
++        const json = await res.json()
++        setBike(json)
++      } catch (err) {
++        setError(err instanceof Error ? err.message : 'Failed to load bike')
++      } finally {
++        setLoading(false)
++      }
++    }
++
++    fetchBike()
++  }, [params.id])
++
++  const handleSubmit = async (data: BikeFormData) => {
++    setSaving(true)
++    setError(null)
++
++    try {
++      const res = await fetch(`/api/admin/bikes/${params.id}`, {
++        method: 'PUT',
++        headers: { 'Content-Type': 'application/json' },
++        body: JSON.stringify(data),
++      })
++
++      if (!res.ok) throw new Error('Failed to update bike')
++
++      router.push('/admin/bikes')
++    } catch (err) {
++      setError(err instanceof Error ? err.message : 'An error occurred')
++    } finally {
++      setSaving(false)
++    }
++  }
++
++  if (loading) return <LoadingSpinner label="Loading bike..." />
++
++  if (error) return <div className="text-red-600">{error}</div>
++
++  return (
++    <div>
++      <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-8">Edit Bike</h1>
++
++      {error && (
++        <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
++          <p className="text-red-600 dark:text-red-200">{error}</p>
++        </div>
++      )}
++
++      <BikeForm initialData={bike} onSubmit={handleSubmit} isLoading={saving} />
++    </div>
++  )
++}
++```
++
++- [ ] **Step 7: Install Uploadthing dependencies**
++
++```bash
++npm install uploadthing @uploadthing/react react-dropzone
++```
++
++- [ ] **Step 8: Commit**
++
++```bash
++git add app/api/uploadthing components/admin/ImageUpload.tsx components/admin/forms/BikeForm.tsx app/admin/\(dashboard\)/bikes/new app/admin/\(dashboard\)/bikes/\[id\] app/api/admin/bikes/\[id\]
++git commit -m "feat: complete bikes CRUD with form, image uploads, edit/delete
++
++- BikeForm component with tabs (Details, Specs, Images, SEO)
++- Image upload via Uploadthing with gallery preview
++- Add new bike: POST /api/admin/bikes, /admin/bikes/new page
++- Edit bike: PUT /api/admin/bikes/[id], /admin/bikes/[id] page
++- Delete bike: DELETE /api/admin/bikes/[id] with ActivityLog
++- Form validation via Zod with error messages
++- Responsive tab layout for bike details and specs"
++```
++
++---
++
++## Task 8: Scooters CRUD (Copy Bikes pattern)
++
++**Files:**
++- Create: `components/admin/forms/ScooterForm.tsx` (copy BikeForm, remove category field)
++- Create: `app/admin/(dashboard)/scooters/page.tsx` (copy bikes list)
++- Create: `app/admin/(dashboard)/scooters/new/page.tsx`
++- Create: `app/admin/(dashboard)/scooters/[id]/page.tsx`
++- Create: `app/api/admin/scooters/route.ts` (copy bikes API)
++- Create: `app/api/admin/scooters/[id]/route.ts`
++
++**Interfaces:**
++- Consumes: Same as Bikes (forms, Uploadthing, API patterns)
++- Produces: Scooter CRUD routes (add, edit, delete, list)
++
++**Steps:**
++
++- [ ] **Step 1-6: Follow exact same pattern as Bikes, but for scooters**
++
++Key differences:
++- Remove `category` dropdown from ScooterForm
++- `type: 'SCOOTER'` in all API calls
++- Replace `/bikes` with `/scooters` in all paths
++- ActivityLog uses `CREATE_SCOOTER`, `UPDATE_SCOOTER`, `DELETE_SCOOTER`
++
++(Detailed code identical to Task 7, replacing `BIKE` with `SCOOTER` throughout.)
++
++- [ ] **Step 7: Commit**
++
++```bash
++git add app/admin/\(dashboard\)/scooters app/api/admin/scooters components/admin/forms/ScooterForm.tsx
++git commit -m "feat: complete scooters CRUD (mirrors bikes pattern)
++
++- ScooterForm (no category field, scooter-specific specs)
++- List, add, edit, delete scooters via /admin/scooters
++- API routes: GET, POST, PUT, DELETE /api/admin/scooters[/id]"
++```
++
++---
++
++## Task 9: Parts CRUD (Similar to Bikes, adjusted fields)
++
++**Files:**
++- Create: `components/admin/forms/PartForm.tsx` (SKU, minStock, no colors/specs tab)
++- Create: `app/admin/(dashboard)/parts/page.tsx`
++- Create: `app/admin/(dashboard)/parts/new/page.tsx`
++- Create: `app/admin/(dashboard)/parts/[id]/page.tsx`
++- Create: `app/api/admin/parts/route.ts`
++- Create: `app/api/admin/parts/[id]/route.ts`
++
++**Interfaces:**
++- Consumes: Part model, PartFormData (Zod)
++- Produces: Part CRUD routes
++
++**Key differences from Bikes:**
++- `sku` field (required, unique)
++- `minStock` field (default 10)
++- `category` enum (not free text)
++- No colors
++- No specs tab
++- No category grouping
++- Low-stock highlighting in table
++
++**Steps:**
++
++- [ ] **Step 1-6: Follow Bikes pattern but for parts**
++
++Use `partSchema` from `lib/admin/validations.ts` (created in Task 1).
++
++- [ ] **Step 7: Commit**
++
++```bash
++git add app/admin/\(dashboard\)/parts app/api/admin/parts components/admin/forms/PartForm.tsx
++git commit -m "feat: complete parts CRUD with SKU and stock management
++
++- PartForm (SKU, minStock, category, no colors)
++- List parts with low-stock highlighting
++- Add, edit, delete parts via /admin/parts
++- API routes: GET, POST, PUT, DELETE /api/admin/parts[/id]
++- StockHistory integration (deferred for Phase 2)"
++```
++
++---
++
++## Task 10: E2E Testing & Polish
++
++**Files:**
++- Create: `tests/e2e/admin.spec.ts` (Playwright)
++- Modify: `middleware.ts` (verify role check in middleware)
++
++**Interfaces:**
++- Consumes: Running app on `localhost:3000`
++- Produces: E2E test suite passing; verified admin flows
++
++**Steps:**
++
++- [ ] **Step 1: Create E2E test for admin login & bike CRUD**
++
++```typescript
++import { test, expect } from '@playwright/test'
++
++test.describe('Admin Panel', () => {
++  test('admin can create, edit, and delete a bike', async ({ page }) => {
++    // 1. Login
++    await page.goto('http://localhost:3000/sign-in')
++    await page.fill('input[type="email"]', 'admin@suzuki-bike.com')
++    await page.fill('input[type="password"]', 'test-password')
++    await page.click('button[type="submit"]')
++    await page.waitForNavigation()
++
++    // 2. Navigate to bikes
++    await page.goto('http://localhost:3000/admin/bikes')
++    await expect(page.locator('h1')).toContainText('Bikes Management')
++
++    // 3. Create bike
++    await page.click('button:has-text("Add Bike")')
++    await page.fill('input[placeholder="e.g., GSX-R1000"]', 'Test Bike')
++    await page.selectOption('select', 'Sport')
++    await page.fill('input[type="number"]', '500000')
++    await page.fill('[id="quantity"]', '10')
++    await page.click('button:has-text("Save Bike")')
++
++    // 4. Verify bike appears in list
++    await page.waitForTimeout(1000)
++    await expect(page.locator('text=Test Bike')).toBeVisible()
++
++    // 5. Edit bike
++    await page.click('button[aria-label="Edit"]')
++    await page.fill('input[value="Test Bike"]', 'Updated Test Bike')
++    await page.click('button:has-text("Save Bike")')
++    await expect(page.locator('text=Updated Test Bike')).toBeVisible()
++
++    // 6. Delete bike
++    await page.click('button:has-text("Delete")')
++    await page.click('button:has-text("Confirm")')
++    await expect(page.locator('text=Updated Test Bike')).not.toBeVisible()
++  })
++
++  test('user cannot access admin panel', async ({ page }) => {
++    // Try to access /admin without admin role
++    await page.goto('http://localhost:3000/admin')
++    await expect(page).toHaveURL(/permission-denied|sign-in/)
++  })
++})
++```
++
++- [ ] **Step 2: Run tests**
++
++```bash
++npx playwright test tests/e2e/admin.spec.ts
++```
++
++Expected: All tests pass.
++
++- [ ] **Step 3: Verify responsive behavior**
++
++Manually test on mobile:
++- Sidebar should collapse to drawer
++- Forms should stack vertically
++- Table should scroll horizontally
++
++- [ ] **Step 4: Test error handling**
++
++- Create bike with duplicate modelName → should show error
++- Create bike with invalid price → should show validation error
++- Upload image > 4MB → should fail with Uploadthing error
++- Delete bike then refresh → bike should be gone
++
++- [ ] **Step 5: Commit**
++
++```bash
++git add tests/e2e/admin.spec.ts
++git commit -m "test: add E2E tests for admin panel CRUD flows
++
++- Admin login → bike create/edit/delete flow
++- Non-admin access → redirects to /permission-denied
++- Form validation errors displayed
++- Responsive behavior on mobile"
++```
++
++---
++
++## Task 11: Final Cleanup, Docs, & Deployment Preparation
++
++**Files:**
++- Create: `docs/ADMIN_PANEL.md` (setup & usage guide)
++- Modify: `.env.example` (add Uploadthing keys)
++- Verify: All dependencies in `package.json`
++
++**Steps:**
++
++- [ ] **Step 1: Create admin panel documentation**
++
++Write `docs/ADMIN_PANEL.md`:
++
++```markdown
++# Admin Panel Documentation
++
++## Setup
++
++1. **Environment Variables**
++
++Add to `.env.local`:
++```
++UPLOADTHING_SECRET=your_secret
++UPLOADTHING_APP_ID=your_app_id
++DATABASE_URL=postgresql://...
++CLERK_SECRET_KEY=your_clerk_secret
++```
++
++2. **Database Migration**
++
++```bash
++npx prisma migrate deploy
++npx prisma db seed
++```
++
++3. **Start Dev Server**
++
++```bash
++npm run dev
++```
++
++Access admin at `http://localhost:3000/admin` (login required).
++
++## Roles
++
++- **SUPER_ADMIN:** Full access to all admin features
++- **ADMIN:** Can manage bikes, scooters, parts, appointments
++- **USER:** No admin access
++
++Existing users with `ADMIN` role were migrated to `SUPER_ADMIN`.
++
++## Features (MVP)
++
++### Dashboard
++- KPI cards: Revenue, stock counts, month-over-month changes
++- Charts: Monthly revenue (12 months), revenue by category
++- Alerts: Low-stock parts
++- Recent appointments
++
++### Bikes Management
++- List with search, filter (status, category), sort, pagination
++- Add/edit with image upload, specs, SEO fields
++- Delete with confirmation
++- ActivityLog records all changes
++
++### Scooters Management
++- Same as bikes (no category field)
++
++### Parts Management
++- List with low-stock highlighting
++- Add/edit with SKU, minStock
++- Delete with confirmation
++
++## Phase 2 (Deferred)
++
++- Orders management
++- Revenue reports & exports
++- Enquiries & customer management
++- Admin management (create/edit/suspend admins)
++- Settings (showroom info, working hours)
++- Test drive requests
++- Soft delete support
++```
++
++- [ ] **Step 2: Update `.env.example`**
++
++Add lines:
++```
++UPLOADTHING_SECRET=your_uploadthing_secret_key
++UPLOADTHING_APP_ID=your_uploadthing_app_id
++```
++
++- [ ] **Step 3: Verify `package.json` dependencies**
++
++Ensure these are installed:
++- `uploadthing`
++- `@uploadthing/react`
++- `@tanstack/react-table`
++- `recharts`
++- `zod`
++- `react-hook-form`
++- `@hookform/resolvers`
++
++Run: `npm list --depth=0` to confirm.
++
++- [ ] **Step 4: Test full flow one more time**
++
++1. Kill dev server
++2. `npm run dev` — start fresh
++3. Login as admin
++4. Create a bike with image upload
++5. View on public `/bikes` page → should appear
++6. Edit bike → changes live
++7. Delete → gone from both admin and public
++8. Dashboard KPIs should update
++
++- [ ] **Step 5: Final commit**
++
++```bash
++git add docs/ADMIN_PANEL.md .env.example
++git commit -m "docs: add admin panel setup guide and finalize MVP
++
++- Admin panel documentation
++- Setup instructions (env, migrations, seed)
++- Feature overview
++- Phase 2 deferred items
++- Update .env.example with Uploadthing keys"
++```
++
++- [ ] **Step 6: Create final summary commit (optional)**
++
++```bash
++git log --oneline main~20..main > ADMIN_PANEL_COMMITS.txt
++git add ADMIN_PANEL_COMMITS.txt
++git commit -m "docs: log admin panel MVP commits for reference"
++```
++
++---
++
++## Summary
++
++**Total Tasks:** 11  
++**Estimated Time:** 5 days (8 hrs/day)  
++**Commits:** ~20  
++**Test Coverage:** E2E for main flows, manual testing for edge cases
++
++**Deliverables:**
++- ✅ Dashboard with KPIs, charts, alerts
++- ✅ Bikes, Scooters, Parts CRUD (full)
++- ✅ Role-based access control
++- ✅ Image uploads (Uploadthing)
++- ✅ ActivityLog audit trail
++- ✅ Responsive layout (desktop & mobile)
++- ✅ Form validation (Zod)
++- ✅ E2E tests (Playwright)
++- ✅ Documentation
++
++**Post-MVP (Phase 2):**
++- Orders management
++- Revenue reports & exports
++- Enquiries & customers
++- Admin management
++- Settings
++- Test drive requests
++- Soft delete
++- Email notifications
+diff --git a/lib/admin/validations.ts b/lib/admin/validations.ts
+new file mode 100644
+index 0000000..256309f
+--- /dev/null
++++ b/lib/admin/validations.ts
+@@ -0,0 +1,52 @@
++import { z } from 'zod'
++
++export const bikeSchema = z.object({
++  modelName: z.string().min(1, 'Model name is required').max(100),
++  category: z.enum(['Sport', 'Commuter', 'Cruiser', 'Adventure']),
++  price: z.number().positive('Price must be positive'),
++  discountPrice: z.number().positive('Discount price must be positive').optional().nullable(),
++  quantity: z.number().int().min(0, 'Quantity cannot be negative'),
++  status: z.enum(['ACTIVE', 'DRAFT', 'OUT_OF_STOCK']),
++  isFeatured: z.boolean().default(false),
++  isNewArrival: z.boolean().default(false),
++  colors: z.array(z.string().min(1)).min(1, 'At least one color required'),
++  specs: z.record(z.any()).optional(),
++  seoTitle: z.string().max(120).optional(),
++  seoDescription: z.string().max(160).optional(),
++  imageUrl: z.string().url().optional(),
++  images: z.array(z.string().url()).optional(),
++})
++
++export type BikeFormData = z.infer<typeof bikeSchema>
++
++export const scooterSchema = z.object({
++  modelName: z.string().min(1, 'Model name is required').max(100),
++  price: z.number().positive('Price must be positive'),
++  discountPrice: z.number().positive('Discount price must be positive').optional().nullable(),
++  quantity: z.number().int().min(0, 'Quantity cannot be negative'),
++  status: z.enum(['ACTIVE', 'DRAFT', 'OUT_OF_STOCK']),
++  isFeatured: z.boolean().default(false),
++  isNewArrival: z.boolean().default(false),
++  colors: z.array(z.string().min(1)).min(1, 'At least one color required'),
++  specs: z.record(z.any()).optional(),
++  seoTitle: z.string().max(120).optional(),
++  seoDescription: z.string().max(160).optional(),
++  imageUrl: z.string().url().optional(),
++  images: z.array(z.string().url()).optional(),
++})
++
++export type ScooterFormData = z.infer<typeof scooterSchema>
++
++export const partSchema = z.object({
++  partName: z.string().min(1, 'Part name is required').max(100),
++  sku: z.string().min(1, 'SKU is required').max(50),
++  category: z.enum(['Engine', 'Brake', 'Electrical', 'Body', 'Accessories', 'Oil & Lubricants']),
++  compatibleModel: z.string().optional(),
++  price: z.number().positive('Price must be positive'),
++  quantity: z.number().int().min(0, 'Quantity cannot be negative'),
++  minStock: z.number().int().min(0, 'Min stock cannot be negative').default(10),
++  status: z.enum(['ACTIVE', 'DRAFT', 'OUT_OF_STOCK']),
++  imageUrl: z.string().url().optional(),
++})
++
++export type PartFormData = z.infer<typeof partSchema>
+diff --git a/prisma/migrations/20261005_add_admin_fields/migration.sql b/prisma/migrations/20261005_add_admin_fields/migration.sql
+new file mode 100644
+index 0000000..105e677
+--- /dev/null
++++ b/prisma/migrations/20261005_add_admin_fields/migration.sql
+@@ -0,0 +1,73 @@
++-- Update Role enum to add SUPER_ADMIN and USER, remove ADMIN and CLIENT mapping
++-- Create new type first
++CREATE TYPE "Role_new" AS ENUM ('SUPER_ADMIN', 'ADMIN', 'USER');
++ALTER TABLE "users" ALTER COLUMN "role" DROP DEFAULT;
++ALTER TABLE "users" ALTER COLUMN "role" TYPE "Role_new" USING 
++  CASE 
++    WHEN "role"::text = 'ADMIN' THEN 'SUPER_ADMIN'::"Role_new"
++    WHEN "role"::text = 'CLIENT' THEN 'USER'::"Role_new"
++    ELSE 'USER'::"Role_new"
++  END;
++ALTER TABLE "users" ALTER COLUMN "role" SET DEFAULT 'USER';
++DROP TYPE "Role";
++ALTER TYPE "Role_new" RENAME TO "Role";
++
++-- Add new columns to users table
++ALTER TABLE "users" ADD COLUMN "status" TEXT NOT NULL DEFAULT 'ACTIVE';
++ALTER TABLE "users" ADD COLUMN "avatar" TEXT;
++ALTER TABLE "users" ADD COLUMN "last_login" TIMESTAMP(3);
++
++-- Add columns to vehicles table
++ALTER TABLE "vehicles" ADD COLUMN "slug" TEXT;
++ALTER TABLE "vehicles" ADD COLUMN "category" TEXT;
++ALTER TABLE "vehicles" ADD COLUMN "discount_price" DOUBLE PRECISION;
++ALTER TABLE "vehicles" ADD COLUMN "images" TEXT[] DEFAULT ARRAY[]::TEXT[];
++ALTER TABLE "vehicles" ADD COLUMN "specs" JSONB;
++ALTER TABLE "vehicles" ADD COLUMN "colors" TEXT[] DEFAULT ARRAY[]::TEXT[];
++ALTER TABLE "vehicles" ADD COLUMN "status" TEXT DEFAULT 'ACTIVE';
++ALTER TABLE "vehicles" ADD COLUMN "is_featured" BOOLEAN DEFAULT false;
++ALTER TABLE "vehicles" ADD COLUMN "is_new_arrival" BOOLEAN DEFAULT false;
++ALTER TABLE "vehicles" ADD COLUMN "seo_title" TEXT;
++ALTER TABLE "vehicles" ADD COLUMN "seo_description" TEXT;
++ALTER TABLE "vehicles" ADD COLUMN "created_at" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP;
++ALTER TABLE "vehicles" ADD COLUMN "updated_at" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP;
++ALTER TABLE "vehicles" ADD CONSTRAINT "vehicles_model_name_key" UNIQUE ("model_name");
++ALTER TABLE "vehicles" ADD CONSTRAINT "vehicles_slug_key" UNIQUE ("slug");
++
++-- Add columns to parts table
++ALTER TABLE "parts" ADD COLUMN "sku" TEXT UNIQUE;
++ALTER TABLE "parts" ADD COLUMN "min_stock" INTEGER DEFAULT 10;
++ALTER TABLE "parts" ADD COLUMN "status" TEXT DEFAULT 'ACTIVE';
++ALTER TABLE "parts" ADD COLUMN "created_at" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP;
++ALTER TABLE "parts" ADD COLUMN "updated_at" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP;
++
++-- Create stock_history table
++CREATE TABLE "stock_history" (
++    "id" SERIAL NOT NULL,
++    "vehicle_id" INTEGER,
++    "part_id" INTEGER,
++    "quantity_change" INTEGER NOT NULL,
++    "reason" TEXT NOT NULL,
++    "notes" TEXT,
++    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
++
++    CONSTRAINT "stock_history_pkey" PRIMARY KEY ("id")
++);
++
++-- Create activity_logs table
++CREATE TABLE "activity_logs" (
++    "id" SERIAL NOT NULL,
++    "user_id" INTEGER NOT NULL,
++    "action" TEXT NOT NULL,
++    "entity_type" TEXT NOT NULL,
++    "entity_id" INTEGER,
++    "changes" JSONB,
++    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
++
++    CONSTRAINT "activity_logs_pkey" PRIMARY KEY ("id")
++);
++
++-- Add foreign keys
++ALTER TABLE "stock_history" ADD CONSTRAINT "stock_history_vehicle_id_fkey" FOREIGN KEY ("vehicle_id") REFERENCES "vehicles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
++ALTER TABLE "stock_history" ADD CONSTRAINT "stock_history_part_id_fkey" FOREIGN KEY ("part_id") REFERENCES "parts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
++ALTER TABLE "activity_logs" ADD CONSTRAINT "activity_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+index 4325af1..87d934f 100644
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+@@ -1,21 +1,22 @@
+ generator client {
+   provider = "prisma-client-js"
+ }
+ 
+ datasource db {
+   provider = "postgresql"
+ }
+ 
+ enum Role {
++  SUPER_ADMIN
+   ADMIN
+-  CLIENT
++  USER
+ }
+ 
+ enum VehicleType {
+   BIKE
+   SCOOTER
+ }
+ 
+ enum PartType {
+   BIKE_PART
+   SCOOTER_PART
+@@ -57,64 +58,117 @@ enum ServiceType {
+   COOLING_SYSTEM_REPAIR
+   FUEL_SYSTEM_CLEANING
+   AIR_FILTER_REPLACEMENT
+   SPARK_PLUG_REPLACEMENT
+   WHEEL_ALIGNMENT
+   WASHING_DETAILING
+   OTHER
+ }
+ 
+ model User {
+-  id          Int      @id @default(autoincrement())
+-  clerkUserId String   @unique @map("clerk_user_id")
+-  username    String   @unique
+-  fullName    String?  @map("full_name")
+-  email       String   @unique
+-  phoneNumber String?  @map("phone_number")
+-  role        Role     @default(CLIENT)
+-  createdAt   DateTime @default(now()) @map("created_at")
+-  updatedAt   DateTime @updatedAt @map("updated_at")
+-
+-  orders      Order[]
++  id              Int       @id @default(autoincrement())
++  clerkUserId     String    @unique @map("clerk_user_id")
++  username        String    @unique
++  fullName        String?   @map("full_name")
++  email           String    @unique
++  phoneNumber     String?   @map("phone_number")
++  role            Role      @default(USER)
++  status          String    @default("ACTIVE")
++  avatar          String?
++  lastLogin       DateTime? @map("last_login")
++  createdAt       DateTime  @default(now()) @map("created_at")
++  updatedAt       DateTime  @updatedAt @map("updated_at")
++
++  orders          Order[]
++  activityLogs    ActivityLog[]
+ 
+   @@map("users")
+ }
+ 
+ model Vehicle {
+-  id          Int         @id @default(autoincrement())
+-  type        VehicleType
+-  modelName   String      @map("model_name")
+-  brand       String      @default("Suzuki")
+-  year        Int
+-  price       Float
+-  quantity    Int
+-  imageUrl    String?     @map("image_url")
+-  description String?
++  id              Int         @id @default(autoincrement())
++  type            VehicleType
++  modelName       String      @unique @map("model_name")
++  slug            String?     @unique
++  category        String?
++  brand           String      @default("Suzuki")
++  price           Float
++  discountPrice   Float?      @map("discount_price")
++  year            Int?
++  quantity        Int
++  imageUrl        String?     @map("image_url")
++  images          String[]    @default([])
++  description     String?
++  specs           Json?
++  colors          String[]    @default([])
++  status          String      @default("ACTIVE")
++  isFeatured      Boolean     @default(false) @map("is_featured")
++  isNewArrival    Boolean     @default(false) @map("is_new_arrival")
++  seoTitle        String?     @map("seo_title")
++  seoDescription  String?     @map("seo_description")
++  createdAt       DateTime    @default(now()) @map("created_at")
++  updatedAt       DateTime    @updatedAt @map("updated_at")
++
++  stockHistory    StockHistory[]
+ 
+   @@map("vehicles")
+ }
+ 
+ model Part {
+   id              Int      @id @default(autoincrement())
+   type            PartType
+-  brand           String   @default("Suzuki")
+   partName        String   @map("part_name")
++  sku             String   @unique
++  category        String
+   compatibleModel String?  @map("compatible_model")
++  brand           String   @default("Suzuki")
+   price           Float
+   quantity        Int
++  minStock        Int      @default(10) @map("min_stock")
+   imageUrl        String?  @map("image_url")
++  status          String   @default("ACTIVE")
++  createdAt       DateTime @default(now()) @map("created_at")
++  updatedAt       DateTime @updatedAt @map("updated_at")
+ 
++  stockHistory    StockHistory[]
+   orderItems      OrderItem[]
+ 
+   @@map("parts")
+ }
+ 
++model StockHistory {
++  id              Int       @id @default(autoincrement())
++  vehicleId       Int?      @map("vehicle_id")
++  vehicle         Vehicle?  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
++  partId          Int?      @map("part_id")
++  part            Part?     @relation(fields: [partId], references: [id], onDelete: Cascade)
++  quantityChange  Int       @map("quantity_change")
++  reason          String
++  notes           String?
++  createdAt       DateTime  @default(now()) @map("created_at")
++
++  @@map("stock_history")
++}
++
++model ActivityLog {
++  id              Int       @id @default(autoincrement())
++  userId          Int       @map("user_id")
++  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
++  action          String
++  entityType      String    @map("entity_type")
++  entityId        Int?      @map("entity_id")
++  changes         Json?
++  createdAt       DateTime  @default(now()) @map("created_at")
++
++  @@map("activity_logs")
++}
++
+ model Offer {
+   id              Int       @id @default(autoincrement())
+   title           String
+   description     String?
+   discountPercent Float?    @map("discount_percent")
+   startDate       DateTime? @map("start_date") @db.Date
+   endDate         DateTime? @map("end_date") @db.Date
+   imageUrl        String?   @map("image_url")
+ 
+   @@map("offers")

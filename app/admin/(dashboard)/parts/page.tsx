@@ -1,0 +1,285 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { Wrench, Plus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import DataTable from '@/components/DataTable'
+import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog'
+
+interface Part {
+  id: number
+  type: string
+  partName: string
+  sku: string
+  price: number
+  quantity: number
+  minStock: number
+  status: string
+  createdAt: string
+}
+
+export default function PartsPage() {
+  const router = useRouter()
+  const [parts, setParts] = useState<Part[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [filterType, setFilterType] = useState('')
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, item: null as Part | null })
+  const [deleting, setDeleting] = useState(false)
+
+  const pageSize = 10
+
+  useEffect(() => {
+    fetchParts()
+  }, [search, filterType, page])
+
+  const fetchParts = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const params = new URLSearchParams({
+        page: String(page),
+        pageSize: String(pageSize),
+        ...(search && { search }),
+        ...(filterType && { type: filterType }),
+      })
+
+      const response = await fetch(`/api/admin/parts?${params}`)
+      if (!response.ok) throw new Error('Failed to fetch parts')
+
+      const data = await response.json()
+      setParts(data.data)
+      setTotalPages(data.pagination.totalPages)
+    } catch (err) {
+      console.error('Error fetching parts:', err)
+      setError('Failed to load parts. Please check your connection and try again.')
+      setParts([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleEdit = (part: Part) => {
+    router.push(`/admin/parts/${part.id}`)
+  }
+
+  const handleDelete = (part: Part) => {
+    setDeleteDialog({ open: true, item: part })
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteDialog.item) return
+
+    setDeleting(true)
+    try {
+      const response = await fetch(`/api/admin/parts/${deleteDialog.item.id}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) throw new Error('Failed to delete part')
+
+      setParts((prev) => prev.filter((p) => p.id !== deleteDialog.item!.id))
+      setDeleteDialog({ open: false, item: null })
+    } catch (error) {
+      console.error('Error deleting part:', error)
+      alert('Failed to delete part')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const columns = [
+    {
+      key: 'partName',
+      label: 'Part Name',
+    },
+    {
+      key: 'sku',
+      label: 'SKU',
+    },
+    {
+      key: 'type',
+      label: 'Category',
+      render: (value: unknown) => (
+        <Badge variant={value === 'BIKE_PART' ? 'default' : 'secondary'}>
+          {value === 'BIKE_PART' ? 'Bike' : 'Scooter'}
+        </Badge>
+      ),
+    },
+    {
+      key: 'price',
+      label: 'Price',
+      render: (value: unknown) => `Rs. ${Number(value).toFixed(2)}`,
+    },
+    {
+      key: 'quantity',
+      label: 'Stock',
+      render: (value: unknown, row: any) => {
+        const isLow = (value as number) <= row.minStock
+        return (
+          <span className="inline-flex items-center gap-2">
+            {String(value)}
+            {isLow && <Badge variant="destructive">Low</Badge>}
+          </span>
+        )
+      },
+    },
+    {
+      key: 'minStock',
+      label: 'Min Stock',
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (value: unknown) => (
+        <Badge variant={value === 'ACTIVE' ? 'default' : 'secondary'}>
+          {String(value)}
+        </Badge>
+      ),
+    },
+  ]
+
+  return (
+    <div>
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-3">
+            <Wrench className="w-8 h-8 text-[#E60012]" />
+            Parts Management
+          </h1>
+          <Link href={`/admin/parts/new${filterType ? `?category=${filterType}` : ''}`}>
+            <Button className="bg-[#E60012] hover:bg-[#E60012]/90 text-white">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Part
+            </Button>
+          </Link>
+        </div>
+
+        {/* Category Tabs */}
+        <div className="flex gap-2 mb-6 border-b border-zinc-200 dark:border-zinc-800">
+          <button
+            onClick={() => {
+              setFilterType('')
+              setPage(1)
+            }}
+            className={`px-4 py-2 font-medium transition-colors ${
+              filterType === ''
+                ? 'text-[#E60012] border-b-2 border-[#E60012]'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+            }`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => {
+              setFilterType('BIKE_PART')
+              setPage(1)
+            }}
+            className={`px-4 py-2 font-medium transition-colors ${
+              filterType === 'BIKE_PART'
+                ? 'text-[#E60012] border-b-2 border-[#E60012]'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+            }`}
+          >
+            Bike
+          </button>
+          <button
+            onClick={() => {
+              setFilterType('SCOOTER_PART')
+              setPage(1)
+            }}
+            className={`px-4 py-2 font-medium transition-colors ${
+              filterType === 'SCOOTER_PART'
+                ? 'text-[#E60012] border-b-2 border-[#E60012]'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+            }`}
+          >
+            Scooter
+          </button>
+        </div>
+
+        {/* Search Filter */}
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder="Search by name or SKU..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              setPage(1)
+            }}
+            className="w-full px-4 py-2 border border-zinc-200 rounded-lg dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100"
+          />
+        </div>
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
+          <div className="text-red-600 dark:text-red-400 text-lg mt-0.5">⚠</div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-red-900 dark:text-red-200 mb-1">Error Loading Parts</h3>
+            <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
+          </div>
+          <button
+            onClick={() => fetchParts()}
+            className="text-sm font-medium text-red-600 dark:text-red-400 hover:underline whitespace-nowrap"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Data Table */}
+      <DataTable
+        columns={columns as any}
+        data={parts as any}
+        loading={loading}
+        showActions
+        isAdmin
+        onEdit={handleEdit as any}
+        onDelete={handleDelete as any}
+        emptyMessage="No parts found. Click 'Add Part' to create one."
+      />
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center gap-2 mt-6">
+          <Button
+            variant="outline"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+          >
+            Previous
+          </Button>
+          <div className="flex items-center gap-2 px-4">
+            Page {page} of {totalPages}
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+          >
+            Next
+          </Button>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDeleteDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) => setDeleteDialog({ open, item: deleteDialog.item })}
+        title="Delete Part"
+        itemName={deleteDialog.item?.partName}
+        onConfirm={confirmDelete}
+        loading={deleting}
+      />
+    </div>
+  )
+}

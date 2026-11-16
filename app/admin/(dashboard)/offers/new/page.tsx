@@ -1,0 +1,28 @@
+import { ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
+import OfferForm from '@/components/admin/forms/OfferForm'
+
+export default function NewOfferPage() {
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/offers"
+            className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Add New Offer</h1>
+            <p className="text-zinc-600 dark:text-zinc-400 mt-2">Create a new promotion offer</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6 lg:p-8">
+        <OfferForm />
+      </div>
+    </div>
+  )
+}
