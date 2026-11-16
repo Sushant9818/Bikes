@@ -3,21 +3,6 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "env": [
-    "DATABASE_URL",
-    "CLERK_SECRET_KEY",
-    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
-    "NEXT_PUBLIC_CLERK_SIGN_IN_URL",
-    "NEXT_PUBLIC_CLERK_SIGN_UP_URL",
-    "ESEWA_MERCHANT_CODE",
-    "ESEWA_SECRET_KEY",
-    "NEXT_PUBLIC_ESEWA_URL",
-    "EMAIL_SERVICE",
-    "EMAIL_USER",
-    "EMAIL_PASSWORD",
-    "NEXT_PUBLIC_API_URL",
-    "NODE_ENV"
-  ],
   "regions": ["sfo1"],
   "git": {
     "deploymentEnabled": true
