@@ -82,7 +82,7 @@ export default function AppointmentConfirmation({
 
           <Section style={{ marginTop: 20 }}>
             <Text style={{ color: '#666' }}>
-              Your appointment status is <strong>Pending</strong>. We will contact you if we need any additional information.
+              Your appointment is <strong>confirmed</strong>! We have scheduled your service and will see you on the specified date and time.
             </Text>
             <Text style={{ color: '#666' }}>If you need to reschedule or cancel, please log in to your account and manage your appointments.</Text>
           </Section>

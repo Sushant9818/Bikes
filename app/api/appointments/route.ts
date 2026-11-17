@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         description: data.description ?? null,
         preferredDate: dateObj,
         preferredTime: data.preferredTime,
-        status: 'PENDING',
+        status: 'APPROVED',
       },
       include: { services: true },
     })
