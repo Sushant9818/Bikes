@@ -77,6 +77,8 @@ export default function BookServicePage() {
             .map(([field, msgs]: [string, unknown]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
             .join(' | ')
           setError(errorMessages)
+        } else if (body.error) {
+          setError(body.error)
         } else {
           setError(body.message ?? 'Failed to book appointment')
         }
