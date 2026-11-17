@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
       where: { clerkUserId: userId },
     });
 
-    if (!user || user.role !== 'SUPER_ADMIN') {
+    if (!user || !['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -58,9 +58,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ users });
   } catch (error) {
     console.error('Error fetching users:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch users' },
-      { status: 500 }
-    );
+    const message = error instanceof Error ? error.message : 'Failed to fetch users';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
