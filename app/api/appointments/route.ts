@@ -17,6 +17,22 @@ export async function POST(req: NextRequest) {
       throw new Error('Invalid date format')
     }
 
+    // Check if slot is already booked
+    const existingAppointment = await prisma.appointment.findFirst({
+      where: {
+        preferredDate: dateObj,
+        preferredTime: data.preferredTime,
+        status: { not: 'CANCELLED' },
+      },
+    })
+
+    if (existingAppointment) {
+      return NextResponse.json(
+        { error: 'This time slot is already booked. Please select a different date or time.' },
+        { status: 409 }
+      )
+    }
+
     const appointment = await prisma.appointment.create({
       data: {
         userId: user.id,
