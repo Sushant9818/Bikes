@@ -129,7 +129,7 @@ export default function MyAppointmentsPage() {
                     </div>
                     <div className="flex flex-wrap gap-2 shrink-0">
                       <Link href={`/appointments/${appt.id}`}><Button size="sm" variant="outline" className="rounded-xl"><Eye className="w-4 h-4 mr-1" /> View</Button></Link>
-                      {appt.status === 'PENDING' && (
+                      {(appt.status === 'PENDING' || appt.status === 'APPROVED') && (
                         <>
                           <Button size="sm" variant="outline" className="rounded-xl text-blue-600 border-blue-200" onClick={() => setRescheduleTarget(appt)}><RefreshCw className="w-4 h-4 mr-1" /> Reschedule</Button>
                           <Button size="sm" variant="outline" className="rounded-xl text-red-600 border-red-200" onClick={() => setCancelTarget(appt)}><XCircle className="w-4 h-4 mr-1" /> Cancel</Button>
