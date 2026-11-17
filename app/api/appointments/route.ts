@@ -4,6 +4,7 @@ import { requireUser, requireAdmin } from '@/lib/auth'
 import { handleApiError } from '@/lib/api-error'
 import { appointmentCreateSchema, appointmentStatusEnum } from '@/lib/validations/appointment'
 import { toAppointmentDto } from '@/lib/appointments'
+import { sendAppointmentConfirmationEmail } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
   try {
@@ -44,6 +45,19 @@ export async function POST(req: NextRequest) {
           },
         })
       }
+    }
+
+    // Fetch updated appointment with services
+    const appointmentWithServices = await prisma.appointment.findUnique({
+      where: { id: appointment.id },
+      include: { services: true },
+    })
+
+    // Send confirmation email
+    if (appointmentWithServices && user.primaryEmailAddress?.emailAddress) {
+      await sendAppointmentConfirmationEmail(appointmentWithServices, user.primaryEmailAddress.emailAddress).catch(
+        (err) => console.error('Failed to send appointment confirmation email:', err)
+      )
     }
 
     return NextResponse.json(toAppointmentDto(appointment), { status: 201 })
