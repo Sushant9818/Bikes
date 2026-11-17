@@ -49,21 +49,23 @@ export default function BookServicePage() {
       if (isNaN(dateObj.getTime())) throw new Error('Invalid date/time')
       const dateTime = dateObj.toISOString()
 
+      const payload: any = {
+        bikeModel: form.bikeModel,
+        services: selectedServices,
+        preferredDate: dateTime,
+        preferredTime: form.preferredTime,
+      }
+      if (form.bikeYear) payload.bikeYear = Number(form.bikeYear)
+      if (form.registrationNumber) payload.registrationNumber = form.registrationNumber
+      if (form.vin) payload.vin = form.vin
+      if (form.mileage) payload.mileage = Number(form.mileage)
+      if (form.description) payload.description = form.description
+      if (showCustom && form.customService) payload.customService = form.customService
+
       const res = await fetch('/api/appointments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bikeModel: form.bikeModel,
-          bikeYear: form.bikeYear ? Number(form.bikeYear) : null,
-          registrationNumber: form.registrationNumber || null,
-          vin: form.vin || null,
-          mileage: form.mileage ? Number(form.mileage) : null,
-          services: selectedServices,
-          customService: showCustom ? form.customService : null,
-          description: form.description || null,
-          preferredDate: dateTime,
-          preferredTime: form.preferredTime,
-        }),
+        body: JSON.stringify(payload),
       })
 
       if (res.ok) {
