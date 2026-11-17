@@ -27,6 +27,7 @@ export function AppointmentsTable() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
+  const [deleting, setDeleting] = useState<number | null>(null)
   const pageSize = 10
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -43,6 +44,18 @@ export function AppointmentsTable() {
       return res.json()
     },
   })
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Delete this appointment? This cannot be undone.')) return
+    setDeleting(id)
+    try {
+      const res = await fetch(`/api/admin/appointments/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed to delete')
+      await refetch()
+    } finally {
+      setDeleting(null)
+    }
+  }
 
   const columnHelper = createColumnHelper<Appointment>()
   const columns: ColumnDef<Appointment>[] = useMemo(
@@ -95,7 +108,13 @@ export function AppointmentsTable() {
             >
               <Eye className="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="sm" className="text-red-600">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-red-600"
+              onClick={() => handleDelete(info.row.original.id)}
+              disabled={deleting === info.row.original.id}
+            >
               <Trash2 className="w-4 h-4" />
             </Button>
           </div>
