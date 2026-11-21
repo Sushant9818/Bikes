@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { formatNPR } from '@/lib/currency';
 import { Package, AlertCircle, Loader, ChevronRight } from 'lucide-react';
 
 interface OrderItem {
@@ -175,7 +176,7 @@ export default function OrdersPage() {
                             {item.partName} × {item.quantity}
                           </span>
                           <span className="font-medium text-gray-900 dark:text-white">
-                            ₹{(item.price * item.quantity).toFixed(2)}
+                            {formatNPR(item.price * item.quantity)}
                           </span>
                         </div>
                       ))}
@@ -186,7 +187,7 @@ export default function OrdersPage() {
                         {order.customerName}
                       </div>
                       <div className="text-lg font-bold text-gray-900 dark:text-white">
-                        ₹{order.totalAmount.toFixed(2)}
+                        {formatNPR(order.totalAmount)}
                       </div>
                     </div>
                   </div>
