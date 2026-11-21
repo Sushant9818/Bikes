@@ -42,9 +42,9 @@ export default function Sidebar({ className }: SidebarProps) {
         <Image
           src="/logo/suzuki.png"
           alt="Suzuki Logo"
-          width={120}
-          height={35}
-          className="h-9 w-auto"
+          width={160}
+          height={50}
+          className="h-14 w-auto"
           priority
         />
         <span className="hidden md:inline font-bold text-lg text-zinc-900 dark:text-zinc-100">Admin</span>
