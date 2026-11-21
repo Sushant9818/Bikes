@@ -1,47 +1,62 @@
-import { auth } from '@clerk/nextjs/server';
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { requireUser } from '@/lib/auth'
+import { handleApiError } from '@/lib/api-error'
+import { z } from 'zod'
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+const updateReviewSchema = z.object({
+  rating: z.number().int().min(1).max(5).optional(),
+  title: z.string().min(1).max(100).optional(),
+  content: z.string().max(1000).optional().nullable(),
+})
+
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { userId } = await auth();
+    const user = await requireUser()
+    const { id } = await params
+    const body = await req.json()
+    const data = updateReviewSchema.parse(body)
 
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const reviewId = (await params).id;
-
-    const review = await prisma.review.findUnique({
-      where: { id: reviewId },
-    });
-
+    const review = await prisma.review.findUnique({ where: { id } })
     if (!review) {
-      return NextResponse.json({ error: 'Review not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Review not found' }, { status: 404 })
     }
 
-    const user = await prisma.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    // Only allow user to delete their own review
-    if (user?.id !== review.userId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (review.userId !== user.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    await prisma.review.delete({
-      where: { id: reviewId },
-    });
+    const updated = await prisma.review.update({
+      where: { id },
+      data,
+      include: {
+        user: { select: { username: true, avatar: true } },
+      },
+    })
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting review:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete review' },
-      { status: 500 }
-    );
+    return NextResponse.json(updated)
+  } catch (err) {
+    return handleApiError(err)
+  }
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const user = await requireUser()
+    const { id } = await params
+
+    const review = await prisma.review.findUnique({ where: { id } })
+    if (!review) {
+      return NextResponse.json({ error: 'Review not found' }, { status: 404 })
+    }
+
+    if (review.userId !== user.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
+
+    await prisma.review.delete({ where: { id } })
+    return NextResponse.json({ success: true })
+  } catch (err) {
+    return handleApiError(err)
   }
 }

@@ -1,115 +1,77 @@
-import { auth } from '@clerk/nextjs/server';
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { requireUser } from '@/lib/auth'
+import { handleApiError } from '@/lib/api-error'
+import { z } from 'zod'
 
-export async function GET(request: NextRequest) {
+const createReviewSchema = z.object({
+  partId: z.number().int().positive('Part ID required'),
+  rating: z.number().int().min(1, 'Min rating 1').max(5, 'Max rating 5'),
+  title: z.string().min(1, 'Title required').max(100, 'Max 100 chars'),
+  content: z.string().max(1000, 'Max 1000 chars').optional(),
+})
+
+export async function POST(req: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const partId = searchParams.get('partId');
+    const user = await requireUser()
+    const body = await req.json()
+    const data = createReviewSchema.parse(body)
+
+    const part = await prisma.part.findUnique({ where: { id: data.partId } })
+    if (!part) {
+      return NextResponse.json({ error: 'Part not found' }, { status: 404 })
+    }
+
+    const review = await prisma.review.upsert({
+      where: { userId_partId: { userId: user.id, partId: data.partId } },
+      update: {
+        rating: data.rating,
+        title: data.title,
+        content: data.content || null,
+      },
+      create: {
+        userId: user.id,
+        partId: data.partId,
+        rating: data.rating,
+        title: data.title,
+        content: data.content || null,
+      },
+    })
+
+    return NextResponse.json(review, { status: 201 })
+  } catch (err) {
+    return handleApiError(err)
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const partId = req.nextUrl.searchParams.get('partId')
 
     if (!partId) {
-      return NextResponse.json({ error: 'Missing partId' }, { status: 400 });
+      return NextResponse.json({ error: 'partId required' }, { status: 400 })
     }
 
     const reviews = await prisma.review.findMany({
       where: { partId: parseInt(partId) },
-      include: { user: { select: { fullName: true } } },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    const avgRating = reviews.length > 0
-      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-      : 0;
-
-    return NextResponse.json({
-      reviews: reviews.map(r => ({
-        id: r.id,
-        rating: r.rating,
-        title: r.title,
-        content: r.content,
-        userName: r.user.fullName || 'Anonymous',
-        createdAt: r.createdAt,
-      })),
-      averageRating: parseFloat(avgRating as string),
-      totalReviews: reviews.length,
-    });
-  } catch (error) {
-    console.error('Error fetching reviews:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch reviews' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const { userId } = await auth();
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { partId, rating, title, content } = await request.json();
-
-    if (!partId || !rating || !title || rating < 1 || rating > 5) {
-      return NextResponse.json(
-        { error: 'Invalid input' },
-        { status: 400 }
-      );
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const part = await prisma.part.findUnique({
-      where: { id: partId },
-    });
-
-    if (!part) {
-      return NextResponse.json({ error: 'Part not found' }, { status: 404 });
-    }
-
-    // Check if user already reviewed this part
-    const existing = await prisma.review.findUnique({
-      where: {
-        userId_partId: {
-          userId: user.id,
-          partId,
+      include: {
+        user: {
+          select: { username: true, avatar: true },
         },
       },
-    });
+      orderBy: { createdAt: 'desc' },
+    })
 
-    if (existing) {
-      // Update existing review
-      await prisma.review.update({
-        where: { id: existing.id },
-        data: { rating, title, content: content || null },
-      });
-    } else {
-      // Create new review
-      await prisma.review.create({
-        data: {
-          userId: user.id,
-          partId,
-          rating,
-          title,
-          content: content || null,
-        },
-      });
-    }
+    const averageRating = reviews.length > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+      : 0
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error posting review:', error);
-    return NextResponse.json(
-      { error: 'Failed to post review' },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      reviews,
+      averageRating: parseFloat(averageRating.toFixed(1)),
+      reviewCount: reviews.length,
+    })
+  } catch (err) {
+    return handleApiError(err)
   }
 }
