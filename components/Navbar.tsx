@@ -45,14 +45,14 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-50 bg-white border-b border-zinc-200 shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20">
           <Link href="/" className="flex items-center shrink-0">
             <Image
               src="/logo/suzuki.png"
               alt="Suzuki Logo"
-              width={150}
-              height={40}
-              className="h-10 w-auto"
+              width={200}
+              height={60}
+              className="h-16 w-auto"
               priority
             />
           </Link>
