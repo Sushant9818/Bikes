@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Menu, X, LayoutDashboard, Bike, Scooter, Wrench, Gift, Package, Users, Calendar } from 'lucide-react'
@@ -38,9 +39,14 @@ export default function Sidebar({ className }: SidebarProps) {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <Link href="/admin" className="flex items-center gap-3 px-6 py-6 shrink-0">
-        <div className="h-10 rounded-xl bg-[#E60012] flex items-center justify-center px-3 text-white font-bold text-sm">
-          Suzuki
-        </div>
+        <Image
+          src="/logo/suzuki.png"
+          alt="Suzuki Logo"
+          width={120}
+          height={35}
+          className="h-9 w-auto"
+          priority
+        />
         <span className="hidden md:inline font-bold text-lg text-zinc-900 dark:text-zinc-100">Admin</span>
       </Link>
 
