@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { formatNPR } from '@/lib/currency';
 import { Heart, AlertCircle, Loader, Trash2, ShoppingCart } from 'lucide-react';
 
 interface WishlistItem {
@@ -176,7 +177,7 @@ export default function WishlistPage() {
                       {item.partName}
                     </h3>
                     <p className="text-lg font-bold text-blue-600 dark:text-blue-400 mt-2">
-                      ₹{item.price.toFixed(2)}
+                      {formatNPR(item.price)}
                     </p>
                   </div>
 

@@ -2,7 +2,8 @@ import { Resend } from 'resend'
 import OrderConfirmationCustomer from '@/emails/OrderConfirmationCustomer'
 import OrderAlertAdmin from '@/emails/OrderAlertAdmin'
 import LowStockAlert from '@/emails/LowStockAlert'
-import type { Order, OrderItem, Part } from '@prisma/client'
+import AppointmentConfirmation from '@/emails/AppointmentConfirmation'
+import type { Order, OrderItem, Part, Appointment, AppointmentService } from '@prisma/client'
 
 let _resend: Resend | null = null
 
@@ -67,5 +68,28 @@ export async function sendLowStockAlertEmail(part: Part): Promise<void> {
     to: adminEmail(),
     subject: `Low Stock Alert: ${part.partName}`,
     react: LowStockAlert({ partName: part.partName, compatibleModel: part.compatibleModel, quantity: part.quantity }),
+  })
+}
+
+export async function sendAppointmentConfirmationEmail(
+  appointment: Appointment & { services: AppointmentService[] },
+  userEmail: string
+): Promise<void> {
+  if (!mailEnabled() || !userEmail) return
+  const dateFormatter = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  const appointmentDate = dateFormatter.format(appointment.preferredDate)
+  await getResend().emails.send({
+    from: mailFrom(),
+    to: userEmail,
+    subject: `Service Appointment Confirmation #APP${appointment.id}`,
+    react: AppointmentConfirmation({
+      appointmentId: appointment.id,
+      customerName: appointment.clientUsername,
+      bikeModel: appointment.bikeModel,
+      services: appointment.services.map((s) => s.service),
+      appointmentDate,
+      appointmentTime: appointment.preferredTime,
+      description: appointment.description || undefined,
+    }),
   })
 }

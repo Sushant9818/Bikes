@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import { useCart } from '@/components/cart/CartContext';
+import { formatNPR } from '@/lib/currency';
 import { Minus, Plus, Trash2, ShoppingCart } from 'lucide-react';
 
 export default function CartPage() {
@@ -92,7 +93,7 @@ export default function CartPage() {
                       {item.partName}
                     </h3>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">
-                      ₹{item.price.toFixed(2)} each
+                      {formatNPR(item.price)} each
                     </p>
                   </div>
 
@@ -121,7 +122,7 @@ export default function CartPage() {
                     {/* Item Total */}
                     <div className="text-right min-w-[100px]">
                       <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                        ₹{(item.price * item.quantity).toFixed(2)}
+                        {formatNPR(item.price * item.quantity)}
                       </p>
                     </div>
 
@@ -155,7 +156,7 @@ export default function CartPage() {
               <div className="space-y-4 mb-6 pb-6 border-b border-gray-200 dark:border-gray-800">
                 <div className="flex justify-between text-gray-600 dark:text-gray-400">
                   <span>Subtotal</span>
-                  <span>₹{totalPrice.toFixed(2)}</span>
+                  <span>{formatNPR(totalPrice)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600 dark:text-gray-400">
                   <span>Items</span>
@@ -165,7 +166,7 @@ export default function CartPage() {
 
               <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white mb-6">
                 <span>Total</span>
-                <span>₹{totalPrice.toFixed(2)}</span>
+                <span>{formatNPR(totalPrice)}</span>
               </div>
 
               {!userId && (

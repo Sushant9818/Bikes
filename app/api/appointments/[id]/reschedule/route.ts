@@ -1,32 +1,70 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireUser } from '@/lib/auth'
-import { ApiError, handleApiError } from '@/lib/api-error'
+import { handleApiError } from '@/lib/api-error'
 import { appointmentRescheduleSchema } from '@/lib/validations/appointment'
-import { toAppointmentDto } from '@/lib/appointments'
+import { sendAppointmentConfirmationEmail } from '@/lib/email'
 
-type Params = { params: Promise<{ id: string }> }
-
-export async function PUT(req: NextRequest, { params }: Params) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireUser()
     const { id } = await params
     const body = await req.json()
     const data = appointmentRescheduleSchema.parse(body)
-    const existing = await prisma.appointment.findUnique({ where: { id: Number(id) } })
-    if (!existing) throw new ApiError(404, 'Appointment not found')
-    if (existing.clientUsername !== user.username) throw new ApiError(403, 'Access denied')
-    if (existing.status !== 'PENDING') throw new ApiError(400, 'Only pending appointments can be rescheduled')
+
+    const appointmentId = parseInt(id)
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: { services: true },
+    })
+
+    if (!appointment) {
+      return NextResponse.json({ message: 'Appointment not found' }, { status: 404 })
+    }
+
+    if (appointment.userId !== user.id) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 403 })
+    }
+
+    const dateObj = new Date(data.preferredDate)
+    if (isNaN(dateObj.getTime())) {
+      return NextResponse.json({ message: 'Invalid date format' }, { status: 400 })
+    }
+
+    // Check if new slot is available (exclude current appointment from check)
+    const conflict = await prisma.appointment.findFirst({
+      where: {
+        preferredDate: dateObj,
+        preferredTime: data.preferredTime,
+        status: { not: 'CANCELLED' },
+        id: { not: appointmentId },
+      },
+    })
+
+    if (conflict) {
+      return NextResponse.json(
+        { error: 'This time slot is already booked. Please select a different date or time.' },
+        { status: 409 }
+      )
+    }
 
     const updated = await prisma.appointment.update({
-      where: { id: Number(id) },
+      where: { id: appointmentId },
       data: {
-        preferredDate: new Date(data.preferredDate),
+        preferredDate: dateObj,
         preferredTime: data.preferredTime,
       },
       include: { services: true },
     })
-    return NextResponse.json(toAppointmentDto(updated))
+
+    // Send confirmation email
+    if (user.primaryEmailAddress?.emailAddress) {
+      await sendAppointmentConfirmationEmail(updated, user.primaryEmailAddress.emailAddress).catch(
+        (err) => console.error('Failed to send reschedule confirmation email:', err)
+      )
+    }
+
+    return NextResponse.json(updated)
   } catch (err) {
     return handleApiError(err)
   }

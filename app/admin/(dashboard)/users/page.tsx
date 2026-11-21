@@ -34,8 +34,10 @@ export default function UsersPage() {
       if (statusFilter) params.set('status', statusFilter);
 
       const response = await fetch(`/api/admin/users?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch users');
       const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch users');
+      }
       setUsers(data.users || []);
     } catch (err) {
       console.error('Error fetching users:', err);
