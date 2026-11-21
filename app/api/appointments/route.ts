@@ -5,6 +5,7 @@ import { handleApiError } from '@/lib/api-error'
 import { appointmentCreateSchema, appointmentStatusEnum } from '@/lib/validations/appointment'
 import { toAppointmentDto } from '@/lib/appointments'
 import { sendAppointmentConfirmationEmail } from '@/lib/email'
+import { ServiceType } from '@prisma/client'
 
 export async function POST(req: NextRequest) {
   try {
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
         await prisma.appointmentService.create({
           data: {
             appointmentId: appointment.id,
-            service: service,
+            service: service as ServiceType,
           },
         })
       }
@@ -70,8 +71,8 @@ export async function POST(req: NextRequest) {
     })
 
     // Send confirmation email
-    if (appointmentWithServices && user.primaryEmailAddress?.emailAddress) {
-      await sendAppointmentConfirmationEmail(appointmentWithServices, user.primaryEmailAddress.emailAddress).catch(
+    if (appointmentWithServices && user.email) {
+      await sendAppointmentConfirmationEmail(appointmentWithServices, user.email).catch(
         (err) => console.error('Failed to send appointment confirmation email:', err)
       )
     }

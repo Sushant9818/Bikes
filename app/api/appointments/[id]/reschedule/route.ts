@@ -58,8 +58,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     })
 
     // Send confirmation email
-    if (user.primaryEmailAddress?.emailAddress) {
-      await sendAppointmentConfirmationEmail(updated, user.primaryEmailAddress.emailAddress).catch(
+    if (user.email) {
+      await sendAppointmentConfirmationEmail(updated, user.email).catch(
         (err) => console.error('Failed to send reschedule confirmation email:', err)
       )
     }

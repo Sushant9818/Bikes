@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import DataTable from '@/components/DataTable'
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog'
+import { formatNPR } from '@/lib/currency'
 
 interface Part {
   id: number
@@ -115,7 +116,7 @@ export default function PartsPage() {
     {
       key: 'price',
       label: 'Price',
-      render: (value: unknown) => `Rs. ${Number(value).toFixed(2)}`,
+      render: (value: unknown) => formatNPR(Number(value)),
     },
     {
       key: 'quantity',
