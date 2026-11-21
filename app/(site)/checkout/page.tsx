@@ -14,6 +14,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { formatNPR } from '@/lib/currency'
+import StoreSelector from '@/components/checkout/StoreSelector'
+import TimeSlotSelector from '@/components/checkout/TimeSlotSelector'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? 'pk_test_placeholder')
 
@@ -67,11 +69,39 @@ export default function CheckoutPage() {
   const [step, setStep] = useState<'form' | 'payment'>('form')
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [formData, setFormData] = useState<CheckoutFormData>({ customerName: '', phone: '', email: '', address: '' })
+  const [pickupLocation, setPickupLocation] = useState('')
+  const [pickupTimeSlot, setPickupTimeSlot] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   const onFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (items.length === 0) return
+
+    if (!formData.customerName.trim()) {
+      setError('Customer name is required')
+      return
+    }
+
+    if (!formData.phone.trim()) {
+      setError('Phone number is required')
+      return
+    }
+
+    if (!formData.address.trim()) {
+      setError('Address is required')
+      return
+    }
+
+    if (!pickupLocation) {
+      setError('Please select a pick-up location')
+      return
+    }
+
+    if (!pickupTimeSlot) {
+      setError('Please select a pick-up time slot')
+      return
+    }
+
     setLoading(true)
     setError(null)
 
@@ -83,6 +113,8 @@ export default function CheckoutPage() {
         phone: formData.phone,
         email: formData.email || undefined,
         address: formData.address,
+        pickupLocation: `Store ${pickupLocation}`,
+        pickupTimeSlot: pickupTimeSlot,
         items: items.map((item) => ({ partId: item.partId, quantity: item.quantity })),
       }),
     })
@@ -135,6 +167,15 @@ export default function CheckoutPage() {
                   <div><Label htmlFor="phone">Phone *</Label><Input id="phone" type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} required className="mt-1" /></div>
                   <div><Label htmlFor="email">Email</Label><Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="mt-1" /></div>
                   <div><Label htmlFor="address">Address *</Label><Textarea id="address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} rows={4} required className="mt-1" /></div>
+
+                  <div className="mb-6 p-4 border border-zinc-200 rounded-lg dark:border-zinc-700">
+                    <h3 className="font-semibold mb-4 text-zinc-900 dark:text-gray-100">Pick-up Details</h3>
+                    <StoreSelector value={pickupLocation} onChange={setPickupLocation} />
+                    <div className="mt-4">
+                      <TimeSlotSelector value={pickupTimeSlot} onChange={setPickupTimeSlot} />
+                    </div>
+                  </div>
+
                   <Button type="submit" disabled={loading} size="lg" className="w-full bg-[#E60012] hover:bg-[#C5000F]">
                     {loading ? 'Creating payment...' : 'Continue to Payment'}
                   </Button>
