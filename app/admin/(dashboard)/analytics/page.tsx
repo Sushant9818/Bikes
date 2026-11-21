@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { AlertCircle, Loader, TrendingUp, Package, Users, DollarSign } from 'lucide-react';
+import { formatNPR } from '@/lib/currency';
 
 interface Analytics {
   overview: {
@@ -89,7 +90,7 @@ export default function AnalyticsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-100 text-sm">Total Revenue</p>
-              <p className="text-3xl font-bold">₹{analytics.overview.totalRevenue.toFixed(0)}</p>
+              <p className="text-3xl font-bold">{formatNPR(analytics.overview.totalRevenue)}</p>
             </div>
             <DollarSign className="h-12 w-12 opacity-20" />
           </div>
@@ -111,7 +112,7 @@ export default function AnalyticsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-purple-100 text-sm">Avg Order Value</p>
-              <p className="text-3xl font-bold">₹{analytics.overview.avgOrderValue.toFixed(0)}</p>
+              <p className="text-3xl font-bold">{formatNPR(analytics.overview.avgOrderValue)}</p>
             </div>
             <TrendingUp className="h-12 w-12 opacity-20" />
           </div>
@@ -139,7 +140,7 @@ export default function AnalyticsPage() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
               <YAxis />
-              <Tooltip formatter={(value: unknown) => `₹${Number(value).toFixed(0)}`} />
+              <Tooltip formatter={(value: unknown) => formatNPR(Number(value))} />
               <Legend />
               <Line type="monotone" dataKey="revenue" stroke="#3B82F6" strokeWidth={2} name="Revenue" />
             </LineChart>
