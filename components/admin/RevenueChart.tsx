@@ -10,6 +10,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts'
+import { formatNPR } from '@/lib/currency'
 
 interface MonthlyData {
   month: string
@@ -38,7 +39,7 @@ export default function RevenueChart({ data }: RevenueChartProps) {
             <YAxis
               tick={{ fill: '#6b7280' }}
               className="dark:fill-zinc-400"
-              label={{ value: 'Revenue (₹)', angle: -90, position: 'insideLeft' }}
+              label={{ value: 'Revenue (Rs)', angle: -90, position: 'insideLeft' }}
             />
             <Tooltip
               contentStyle={{
@@ -46,7 +47,7 @@ export default function RevenueChart({ data }: RevenueChartProps) {
                 border: '1px solid #e5e7eb',
                 borderRadius: '8px',
               }}
-              formatter={(value: any) => `₹${(value ?? 0).toFixed(2)}`}
+              formatter={(value: any) => formatNPR(value ?? 0)}
             />
             <Legend />
             <Bar
