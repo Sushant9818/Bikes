@@ -7,6 +7,7 @@ import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/components/cart/CartContext'
 import PartCard from '@/components/PartCard'
+import SearchFilters from '@/components/SearchFilters'
 import CatalogFilters, { type SortOption } from '@/components/CatalogFilters'
 import Footer from '@/components/Footer'
 import { PartCategoryTabs } from '@/components/CategoryTabs'
@@ -49,6 +50,14 @@ export default function PartsPage() {
   const [form, setForm] = useState<PartFormState>(emptyForm)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+
+  const handleSearch = (params: { q: string; category: string; minPrice: number; maxPrice: number; minRating: number }) => {
+    setSearchQuery(params.q)
+    setTypeFilter(params.category !== 'ALL' ? (params.category as 'BIKE_PART' | 'SCOOTER_PART') : 'BIKE_PART')
+    setMinPrice(params.minPrice.toString())
+    setMaxPrice(params.maxPrice.toString())
+    fetchData()
+  }
 
   const fetchData = async () => {
     setLoading(true)
@@ -107,6 +116,8 @@ export default function PartsPage() {
               </Button>
             )}
           </div>
+
+          <SearchFilters onSearch={handleSearch} />
 
           <div className="mb-8 space-y-4">
             <div className="flex flex-col sm:flex-row gap-4">
