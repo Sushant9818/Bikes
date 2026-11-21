@@ -1,6 +1,7 @@
 'use client'
 
 import { TrendingUp, TrendingDown } from 'lucide-react'
+import { formatNPR } from '@/lib/currency'
 
 interface DashboardCardsProps {
   kpis: {
@@ -40,7 +41,7 @@ export default function DashboardCards({ kpis }: DashboardCardsProps) {
     },
     {
       label: 'This Month Revenue',
-      value: `₹${(kpis.thisMonthRevenue / 1000).toFixed(1)}K`,
+      value: formatNPR(kpis.thisMonthRevenue),
       icon: '💰',
       bgColor: 'bg-green-50 dark:bg-green-950/30',
       trend: kpis.revenueTrend,
