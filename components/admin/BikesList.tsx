@@ -6,6 +6,7 @@ import { Edit2, Trash2, Eye } from 'lucide-react'
 import { useAuth } from '@clerk/nextjs'
 import type { Vehicle } from '@prisma/client'
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog'
+import { formatNPR } from '@/lib/currency'
 
 interface BikesListProps {
   bikes: Vehicle[]
@@ -79,10 +80,10 @@ export default function BikesList({ bikes }: BikesListProps) {
                     {bike.category || '—'}
                   </td>
                   <td className="px-6 py-4 text-sm text-zinc-900 dark:text-zinc-100 font-medium">
-                    ₹{bike.price.toLocaleString()}
+                    {formatNPR(bike.price)}
                     {bike.discountPrice && (
                       <span className="block text-xs text-green-600 dark:text-green-400 line-through">
-                        ₹{bike.discountPrice.toLocaleString()}
+                        {formatNPR(bike.discountPrice)}
                       </span>
                     )}
                   </td>

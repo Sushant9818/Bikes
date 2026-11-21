@@ -9,6 +9,7 @@ import { DataTable } from '@/components/admin/DataTable'
 import { ColumnDef } from '@tanstack/react-table'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { useRouter } from 'next/navigation'
+import { formatNPR } from '@/lib/currency'
 
 interface Scooter {
   id: number
@@ -68,7 +69,7 @@ export default function ScootersPage() {
     {
       accessorKey: 'price',
       header: 'Price',
-      cell: (info) => `Rs. ${info.getValue()}`,
+      cell: (info) => formatNPR(Number(info.getValue())),
     },
     {
       accessorKey: 'quantity',
