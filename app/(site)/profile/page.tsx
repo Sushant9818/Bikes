@@ -1,273 +1,193 @@
-'use client';
+'use client'
 
-export const dynamic = 'force-dynamic';
-
-import { useEffect, useState } from 'react';
-import { useAuth, useClerk } from '@clerk/nextjs';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { User, Mail, Phone, MapPin, LogOut, Heart, ShoppingBag, AlertCircle, Loader } from 'lucide-react';
+import { useEffect, useState } from 'react'
+import { useAuth, useUser, useClerk } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
+import { User, LogOut, AlertCircle, Loader } from 'lucide-react'
+import Link from 'next/link'
 
 interface UserProfile {
-  id: number;
-  fullName: string | null;
-  email: string;
-  phoneNumber: string | null;
-  createdAt: string;
-  role: string;
+  id: number
+  username: string
+  email: string
+  phoneNumber?: string
+  avatar?: string
+}
+
+interface Stats {
+  totalOrders: number
+  totalAppointments: number
+  totalReviews: number
+  totalWishlistItems: number
 }
 
 export default function ProfilePage() {
-  const router = useRouter();
-  const { isSignedIn, isLoaded } = useAuth();
-  const { signOut } = useClerk();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState({
-    fullName: '',
-    phoneNumber: '',
-  });
+  const { isSignedIn, isLoaded } = useAuth()
+  const { user } = useUser()
+  const { signOut } = useClerk()
+  const router = useRouter()
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!isLoaded) return
     if (!isSignedIn) {
-      router.push('/sign-in?redirect_url=/profile');
-      return;
+      router.push('/sign-in')
+      return
     }
 
-    fetchProfile();
-  }, [isSignedIn, isLoaded, router]);
+    fetchProfile()
+    fetchStats()
+  }, [isSignedIn, isLoaded, router])
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch('/api/user/profile');
-      if (!response.ok) throw new Error('Failed to fetch profile');
-      const data = await response.json();
-      setProfile(data);
-      setFormData({
-        fullName: data.fullName || '',
-        phoneNumber: data.phoneNumber || '',
-      });
+      const response = await fetch('/api/users/me')
+      if (!response.ok) throw new Error('Failed to fetch profile')
+      const data = await response.json()
+      setProfile(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load profile');
-    } finally {
-      setLoading(false);
+      setError(err instanceof Error ? err.message : 'Failed to load profile')
     }
-  };
+  }
 
-  const handleSave = async () => {
-    setSaving(true);
-    setError(null);
-
+  const fetchStats = async () => {
     try {
-      const response = await fetch('/api/user/profile', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) throw new Error('Failed to save profile');
-      const updated = await response.json();
-      setProfile(updated);
-      setEditing(false);
+      const response = await fetch('/api/users/me/stats')
+      if (!response.ok) throw new Error('Failed to fetch stats')
+      const data = await response.json()
+      setStats(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save profile');
+      console.error('Failed to load stats:', err)
     } finally {
-      setSaving(false);
+      setLoading(false)
     }
-  };
+  }
 
-  const handleSignOut = async () => {
-    await signOut();
-    router.push('/');
-  };
-
-  if (!isLoaded) {
+  if (!isLoaded || loading) {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-950 flex items-center justify-center">
         <Loader className="h-12 w-12 text-blue-600 animate-spin" />
       </div>
-    );
+    )
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white dark:bg-gray-950">
-        <div className="max-w-4xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-center h-96">
-            <Loader className="h-12 w-12 text-blue-600 animate-spin" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error && !profile) {
-    return (
-      <div className="min-h-screen bg-white dark:bg-gray-950">
-        <div className="max-w-4xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400 mb-6">
-            <AlertCircle className="h-5 w-5 flex-shrink-0" />
-            <span>{error}</span>
-          </div>
-          <button
-            onClick={fetchProfile}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
+  if (!isSignedIn) {
+    return null
   }
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
       <div className="max-w-4xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Profile</h1>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center">
+              <User className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{user?.username}</h1>
+              <p className="text-gray-600 dark:text-gray-400">{user?.primaryEmailAddress?.emailAddress}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => signOut({ redirectUrl: '/' })}
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            Sign Out
+          </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Account Info */}
-            <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Account Information
-                </h2>
-                {!editing && (
-                  <button
-                    onClick={() => setEditing(true)}
-                    className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
-                  >
-                    Edit
-                  </button>
-                )}
-              </div>
+        {error && (
+          <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3 mb-8">
+            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <span className="text-sm text-red-700 dark:text-red-300">{error}</span>
+          </div>
+        )}
 
-              {error && editing && (
-                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-red-700 dark:text-red-400 text-sm">
-                  {error}
-                </div>
-              )}
-
-              {editing ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
-                      Full Name
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.fullName}
-                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg dark:bg-gray-800 dark:text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
-                      Email (cannot edit)
-                    </label>
-                    <input
-                      type="email"
-                      value={profile?.email || ''}
-                      disabled
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg dark:bg-gray-800 dark:text-white opacity-50 cursor-not-allowed"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      value={formData.phoneNumber}
-                      onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg dark:bg-gray-800 dark:text-white"
-                    />
-                  </div>
-
-                  <div className="flex gap-3 pt-4">
-                    <button
-                      onClick={handleSave}
-                      disabled={saving}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {saving ? 'Saving...' : 'Save Changes'}
-                    </button>
-                    <button
-                      onClick={() => setEditing(false)}
-                      className="px-4 py-2 bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                    <User className="h-5 w-5 text-gray-400" />
-                    <span>{profile?.fullName || 'Not provided'}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                    <Mail className="h-5 w-5 text-gray-400" />
-                    <span>{profile?.email}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                    <Phone className="h-5 w-5 text-gray-400" />
-                    <span>{profile?.phoneNumber || 'Not provided'}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                    <MapPin className="h-5 w-5 text-gray-400" />
-                    <span className="capitalize">{profile?.role.toLowerCase()}</span>
-                  </div>
-                </div>
-              )}
+        {/* Stats Cards */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+            <Link href="/orders" className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow">
+              <p className="text-blue-100 text-sm mb-2">Total Orders</p>
+              <p className="text-3xl font-bold">{stats.totalOrders}</p>
+            </Link>
+            <Link href="/my-appointments" className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow">
+              <p className="text-green-100 text-sm mb-2">Service Appointments</p>
+              <p className="text-3xl font-bold">{stats.totalAppointments}</p>
+            </Link>
+            <Link href="/wishlist" className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow">
+              <p className="text-purple-100 text-sm mb-2">Wishlist Items</p>
+              <p className="text-3xl font-bold">{stats.totalWishlistItems}</p>
+            </Link>
+            <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-lg p-6 shadow-md">
+              <p className="text-orange-100 text-sm mb-2">Your Reviews</p>
+              <p className="text-3xl font-bold">{stats.totalReviews}</p>
             </div>
           </div>
+        )}
 
-          {/* Sidebar */}
-          <div className="lg:col-span-1 space-y-4">
-            {/* Quick Links */}
-            <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
-              <h3 className="font-bold text-gray-900 dark:text-white mb-4">Quick Links</h3>
-              <div className="space-y-2">
-                <Link
-                  href="/orders"
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300"
-                >
-                  <ShoppingBag className="h-5 w-5" />
-                  <span>Order History</span>
-                </Link>
-                <Link
-                  href="/wishlist"
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300"
-                >
-                  <Heart className="h-5 w-5" />
-                  <span>My Wishlist</span>
-                </Link>
-              </div>
-            </div>
-
-            {/* Sign Out */}
-            <button
-              onClick={handleSignOut}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors border border-red-200 dark:border-red-800"
+        {/* Quick Links */}
+        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-8 mb-8">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Quick Links</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Link
+              href="/orders"
+              className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
             >
-              <LogOut className="h-5 w-5" />
-              Sign Out
-            </button>
+              <p className="font-semibold text-gray-900 dark:text-white">Order History</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">View your past and current orders</p>
+            </Link>
+            <Link
+              href="/my-appointments"
+              className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-green-500 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+            >
+              <p className="font-semibold text-gray-900 dark:text-white">My Appointments</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">View and manage service appointments</p>
+            </Link>
+            <Link
+              href="/wishlist"
+              className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-purple-500 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+            >
+              <p className="font-semibold text-gray-900 dark:text-white">Wishlist</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">View your saved items</p>
+            </Link>
+            <Link
+              href="/cart"
+              className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-orange-500 dark:hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
+            >
+              <p className="font-semibold text-gray-900 dark:text-white">Shopping Cart</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Continue shopping</p>
+            </Link>
           </div>
+        </div>
+
+        {/* Profile Info */}
+        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-8">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Account Information</h2>
+          {profile && (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Username</label>
+                <p className="text-gray-900 dark:text-white mt-1">{profile.username}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                <p className="text-gray-900 dark:text-white mt-1">{profile.email}</p>
+              </div>
+              {profile.phoneNumber && (
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Phone</label>
+                  <p className="text-gray-900 dark:text-white mt-1">{profile.phoneNumber}</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
-  );
+  )
 }
