@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useUser, useClerk } from '@clerk/nextjs'
@@ -45,10 +46,15 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 bg-white border-b border-zinc-200 shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-3 shrink-0">
-            <div className="h-10 rounded-xl bg-[#E60012] flex items-center justify-center px-4 text-white font-bold">
-              Suzuki
-            </div>
+          <Link href="/" className="flex items-center shrink-0">
+            <Image
+              src="/logo/suzuki.png"
+              alt="Suzuki Logo"
+              width={150}
+              height={40}
+              className="h-10 w-auto"
+              priority
+            />
           </Link>
 
           <div className="hidden lg:flex items-center gap-2 flex-1 max-w-2xl mx-6">
