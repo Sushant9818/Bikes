@@ -25,6 +25,8 @@ enum PartType {
 enum OrderStatus {
   PENDING
   PAID
+  READY_FOR_PICKUP
+  PICKED_UP
   CONFIRMED
   SHIPPED
   CANCELLED
@@ -204,6 +206,10 @@ model Order {
   userId                Int?        @map("user_id")
   user                  User?       @relation(fields: [userId], references: [id])
   createdAt             DateTime    @default(now()) @map("created_at")
+  pickupLocation        String?     @map("pickup_location")
+  estimatedPickupTime   DateTime?   @map("estimated_pickup_time")
+  pickupCode            String?     @unique @map("pickup_code")
+  actualPickupTime      DateTime?   @map("actual_pickup_time")
 
   items                 OrderItem[]
   shipment       Shipment?
