@@ -139,7 +139,7 @@ export default function AnalyticsPage() {
             <LineChart data={analytics.revenueByDate}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
-              <YAxis />
+              <YAxis tickFormatter={(value) => formatNPR(value).replace('Rs ', '')} />
               <Tooltip formatter={(value: unknown) => formatNPR(Number(value))} />
               <Legend />
               <Line type="monotone" dataKey="revenue" stroke="#3B82F6" strokeWidth={2} name="Revenue" />
