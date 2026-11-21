@@ -8,6 +8,8 @@ import { useRouter } from 'next/navigation'
 import { useCart } from '@/cart/CartContext'
 import Footer from '@/components/Footer'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import ReviewForm from '@/components/ReviewForm'
+import ReviewsList from '@/components/ReviewsList'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ShoppingCart } from 'lucide-react'
@@ -67,6 +69,13 @@ export default function PartDetailPage() {
                 <Button asChild variant="outline"><Link href="/parts">View All Parts</Link></Button>
               </div>
             </div>
+          </div>
+
+          {/* Reviews Section */}
+          <div className="mt-16">
+            <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-8">Customer Reviews</h2>
+            <ReviewForm partId={parseInt(id)} onSuccess={() => window.location.reload()} />
+            <ReviewsList partId={parseInt(id)} />
           </div>
         </div>
       </div>
