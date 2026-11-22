@@ -1,87 +1,36 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server'
+import { requireUser } from '@/lib/auth'
+import { handleApiError, ApiError } from '@/lib/api-error'
+import { validateCoupon } from '@/lib/coupon-validation'
 
+// Note: this codebase's auth helper is `requireUser()` (lib/auth.ts) — there
+// is no `requireAuth()` export. It throws ApiError(401) when unauthenticated,
+// which `handleApiError` below converts into a 401 JSON response.
 export async function POST(request: NextRequest) {
   try {
-    const { code, cartTotal } = await request.json();
+    await requireUser()
 
-    if (!code) {
-      return NextResponse.json(
-        { error: 'Coupon code required' },
-        { status: 400 }
-      );
+    const body = await request.json().catch(() => null)
+    const { code, orderTotal, userId } = body ?? {}
+
+    if (!code || typeof code !== 'string') {
+      throw new ApiError(400, 'code is required')
+    }
+    if (typeof orderTotal !== 'number' || !Number.isFinite(orderTotal) || orderTotal < 0) {
+      throw new ApiError(400, 'orderTotal must be a non-negative number')
+    }
+    if (typeof userId !== 'number' || !Number.isFinite(userId)) {
+      throw new ApiError(400, 'userId is required')
     }
 
-    const coupon = await prisma.coupon.findUnique({
-      where: { code: code.toUpperCase() },
-    });
+    const result = await validateCoupon(code, orderTotal, userId)
 
-    if (!coupon) {
-      return NextResponse.json(
-        { error: 'Invalid coupon code' },
-        { status: 404 }
-      );
-    }
-
-    // Check if coupon is active
-    if (!coupon.isActive) {
-      return NextResponse.json(
-        { error: 'This coupon is no longer valid' },
-        { status: 400 }
-      );
-    }
-
-    // Check expiry date
-    if (coupon.expiryDate && new Date() > coupon.expiryDate) {
-      return NextResponse.json(
-        { error: 'This coupon has expired' },
-        { status: 400 }
-      );
-    }
-
-    // Check max uses
-    if (coupon.maxUses && coupon.usesCount >= coupon.maxUses) {
-      return NextResponse.json(
-        { error: 'This coupon has reached its usage limit' },
-        { status: 400 }
-      );
-    }
-
-    // Check minimum amount
-    if (coupon.minAmount && cartTotal < coupon.minAmount) {
-      return NextResponse.json(
-        {
-          error: `Minimum order amount of ₹${coupon.minAmount} required for this coupon`,
-        },
-        { status: 400 }
-      );
-    }
-
-    // Calculate discount
-    let discount = 0;
-    if (coupon.discountPercent) {
-      discount = (cartTotal * coupon.discountPercent) / 100;
-    } else if (coupon.discountFixed) {
-      discount = coupon.discountFixed;
-    }
-
-    const finalAmount = Math.max(0, cartTotal - discount);
-
-    return NextResponse.json({
-      valid: true,
-      couponCode: coupon.code,
-      discountPercent: coupon.discountPercent || null,
-      discountFixed: coupon.discountFixed || null,
-      discountAmount: discount,
-      originalAmount: cartTotal,
-      finalAmount,
-      description: coupon.description,
-    });
-  } catch (error) {
-    console.error('Error validating coupon:', error);
-    return NextResponse.json(
-      { error: 'Failed to validate coupon' },
-      { status: 500 }
-    );
+    // Spec allows either a 400 for invalid coupons or a 200 with `valid:
+    // false` — this is a normal business outcome (not a malformed request),
+    // so we use 200 for both valid and invalid results and let the body's
+    // `valid` field carry the signal.
+    return NextResponse.json(result)
+  } catch (err) {
+    return handleApiError(err)
   }
 }
