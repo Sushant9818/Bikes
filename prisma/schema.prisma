@@ -214,6 +214,8 @@ model Order {
   items                 OrderItem[]
   shipment       Shipment?
   returns         Return[]
+  couponCode      String?     @map("coupon_code")
+  discountAmount  Float?      @map("discount_amount")
 
   @@map("orders")
 }
