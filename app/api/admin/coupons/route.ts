@@ -55,6 +55,10 @@ export async function POST(req: NextRequest) {
         discountFixed: validated.discountFixed ?? null,
         minAmount: validated.minAmount ?? null,
         maxUses: validated.maxUses ?? null,
+        // `undefined` here is intentionally left for Prisma to omit, so the
+        // column default (1) applies; an explicit `null` means "unlimited
+        // per user" (mirrors maxUses' null-means-unlimited convention).
+        maxUsesPerUser: validated.maxUsesPerUser,
         expiryDate: validated.expiryDate ? new Date(validated.expiryDate) : null,
         isActive: validated.isActive,
       },

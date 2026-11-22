@@ -40,6 +40,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         discountFixed: validated.discountFixed ?? null,
         minAmount: validated.minAmount ?? null,
         maxUses: validated.maxUses ?? null,
+        // `undefined` is left for Prisma to omit (leaves existing value
+        // unchanged on update); an explicit `null` means "unlimited per user".
+        maxUsesPerUser: validated.maxUsesPerUser,
         expiryDate: validated.expiryDate ? new Date(validated.expiryDate) : null,
         isActive: validated.isActive,
       },

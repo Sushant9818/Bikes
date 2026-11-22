@@ -7,10 +7,10 @@ const couponBaseSchema = z.object({
   discountFixed: z.number().positive('Must be greater than 0').optional(),
   minAmount: z.number().min(0, 'Must be >= 0').optional().nullable(),
   maxUses: z.number().int().positive('Must be a positive integer').optional().nullable(),
-  // Note: maxUsesPerUser is accepted for forward-compatibility with the coupon
-  // management spec, but the `coupons` table has no column for it yet (see
-  // prisma/schema.prisma Coupon model). It is validated here but NOT persisted
-  // until a migration adds the column.
+  // Per-user cap, persisted on the `coupons.maxUsesPerUser` column (added by
+  // prisma/migrations/add_max_uses_per_user). Null means unlimited uses per
+  // user; omitted falls back to the column default (1). Enforcement of the
+  // actual limit happens in the validation logic (coupon redemption), not here.
   maxUsesPerUser: z.number().int().positive('Must be a positive integer').optional().nullable(),
   expiryDate: z.string().optional().nullable(),
   isActive: z.boolean(),

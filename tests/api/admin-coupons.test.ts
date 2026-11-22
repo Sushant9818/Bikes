@@ -150,6 +150,45 @@ describe('POST /api/admin/coupons', () => {
     )
   })
 
+  it('persists and returns maxUsesPerUser when provided', async () => {
+    requireAdminMock.mockResolvedValue({ id: 1, role: 'ADMIN' })
+    ;(prisma.coupon.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(null)
+    ;(prisma.coupon.create as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: 3,
+      ...validCoupon,
+      maxUsesPerUser: 2,
+    })
+
+    const req = new Request('http://localhost/api/admin/coupons', {
+      method: 'POST',
+      body: JSON.stringify({ ...validCoupon, maxUsesPerUser: 2 }),
+    })
+    const res = await POST(req as never)
+    const json = await res.json()
+
+    expect(res.status).toBe(201)
+    expect(json.maxUsesPerUser).toBe(2)
+    expect(prisma.coupon.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ maxUsesPerUser: 2 }) })
+    )
+  })
+
+  it('omits maxUsesPerUser from create data when not provided, letting the column default apply', async () => {
+    requireAdminMock.mockResolvedValue({ id: 1, role: 'ADMIN' })
+    ;(prisma.coupon.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(null)
+    ;(prisma.coupon.create as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 4, ...validCoupon, maxUsesPerUser: 1 })
+
+    const req = new Request('http://localhost/api/admin/coupons', {
+      method: 'POST',
+      body: JSON.stringify(validCoupon),
+    })
+    await POST(req as never)
+
+    const callData = (prisma.coupon.create as ReturnType<typeof vi.fn>).mock.calls[0][0].data
+    expect('maxUsesPerUser' in callData).toBe(true)
+    expect(callData.maxUsesPerUser).toBeUndefined()
+  })
+
   it('rejects a duplicate coupon code', async () => {
     requireAdminMock.mockResolvedValue({ id: 1, role: 'ADMIN' })
     ;(prisma.coupon.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 99, code: 'SAVE10' })
@@ -216,6 +255,42 @@ describe('PUT /api/admin/coupons/[id]', () => {
     expect(json.discountPercent).toBe(20)
     expect(prisma.coupon.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 1 } })
+    )
+  })
+
+  it('persists and returns maxUsesPerUser on update', async () => {
+    requireAdminMock.mockResolvedValue({ id: 1, role: 'ADMIN' })
+    ;(prisma.coupon.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 1, code: 'SAVE10' })
+    ;(prisma.coupon.update as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 1, ...validCoupon, maxUsesPerUser: 3 })
+
+    const req = new Request('http://localhost/api/admin/coupons/1', {
+      method: 'PUT',
+      body: JSON.stringify({ ...validCoupon, maxUsesPerUser: 3 }),
+    })
+    const res = await PUT(req as never, makeParams('1'))
+    const json = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(json.maxUsesPerUser).toBe(3)
+    expect(prisma.coupon.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ maxUsesPerUser: 3 }) })
+    )
+  })
+
+  it('allows explicitly setting maxUsesPerUser to null for unlimited per-user uses', async () => {
+    requireAdminMock.mockResolvedValue({ id: 1, role: 'ADMIN' })
+    ;(prisma.coupon.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 1, code: 'SAVE10' })
+    ;(prisma.coupon.update as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 1, ...validCoupon, maxUsesPerUser: null })
+
+    const req = new Request('http://localhost/api/admin/coupons/1', {
+      method: 'PUT',
+      body: JSON.stringify({ ...validCoupon, maxUsesPerUser: null }),
+    })
+    const res = await PUT(req as never, makeParams('1'))
+
+    expect(res.status).toBe(200)
+    expect(prisma.coupon.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ maxUsesPerUser: null }) })
     )
   })
 })
