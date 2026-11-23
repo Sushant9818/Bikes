@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { loadStripe } from '@stripe/stripe-js'
@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { formatNPR } from '@/lib/currency'
 import StoreSelector from '@/components/checkout/StoreSelector'
 import TimeSlotSelector from '@/components/checkout/TimeSlotSelector'
+import CouponInput from '@/components/checkout/CouponInput'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? 'pk_test_placeholder')
 
@@ -72,10 +73,36 @@ export default function CheckoutPage() {
   const [pickupLocation, setPickupLocation] = useState('')
   const [pickupTimeSlot, setPickupTimeSlot] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [userId, setUserId] = useState<number | null>(null)
+  const [couponCode, setCouponCode] = useState<string | null>(null)
+  const [discountAmount, setDiscountAmount] = useState<number | null>(null)
+
+  useEffect(() => {
+    let active = true
+    fetch('/api/users/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (active && data?.id) setUserId(data.id)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const finalTotal = Math.max(0, totalPrice - (discountAmount ?? 0))
 
   const onFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (items.length === 0) return
+
+    // If a coupon code was applied client-side but we somehow don't have a
+    // discount amount for it, don't let the customer pay the un-discounted
+    // price — make them re-apply (or remove) the coupon first.
+    if (couponCode && discountAmount === null) {
+      setError('Please re-apply your coupon code before continuing')
+      return
+    }
 
     if (!formData.customerName.trim()) {
       setError('Customer name is required')
@@ -116,6 +143,8 @@ export default function CheckoutPage() {
         pickupLocation: `Store ${pickupLocation}`,
         pickupTimeSlot: pickupTimeSlot,
         items: items.map((item) => ({ partId: item.partId, quantity: item.quantity })),
+        couponCode: couponCode ?? undefined,
+        discountAmount: discountAmount ?? undefined,
       }),
     })
 
@@ -176,6 +205,16 @@ export default function CheckoutPage() {
                     </div>
                   </div>
 
+                  {userId !== null && (
+                    <div className="mb-6 p-4 border border-zinc-200 rounded-lg dark:border-zinc-700">
+                      <CouponInput
+                        orderTotal={totalPrice}
+                        onDiscountChange={setDiscountAmount}
+                        onCodeChange={setCouponCode}
+                      />
+                    </div>
+                  )}
+
                   <Button type="submit" disabled={loading} size="lg" className="w-full bg-[#E60012] hover:bg-[#C5000F]">
                     {loading ? 'Creating payment...' : 'Continue to Payment'}
                   </Button>
@@ -185,7 +224,7 @@ export default function CheckoutPage() {
                   <h2 className="text-xl font-bold text-zinc-900 mb-4 dark:text-zinc-100">Pay with Card</h2>
                   {clientSecret && (
                     <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe', variables: { colorPrimary: '#E60012' } } }}>
-                      <PaymentForm totalPrice={totalPrice} onSuccess={onPaymentSuccess} />
+                      <PaymentForm totalPrice={finalTotal} onSuccess={onPaymentSuccess} />
                     </Elements>
                   )}
                 </div>
@@ -202,8 +241,14 @@ export default function CheckoutPage() {
                     </div>
                   ))}
                 </div>
+                {discountAmount !== null && discountAmount > 0 && (
+                  <div className="flex justify-between text-sm text-green-600 dark:text-green-400 mb-2">
+                    <span>Discount {couponCode ? `(${couponCode})` : ''}</span>
+                    <span>-{formatNPR(discountAmount)}</span>
+                  </div>
+                )}
                 <div className="border-t border-zinc-200 pt-4 flex justify-between font-bold text-lg dark:border-zinc-800">
-                  <span>Total</span><span className="text-[#E60012]">{formatNPR(totalPrice)}</span>
+                  <span>Total</span><span className="text-[#E60012]">{formatNPR(finalTotal)}</span>
                 </div>
               </div>
             </div>

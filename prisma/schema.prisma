@@ -214,6 +214,8 @@ model Order {
   items                 OrderItem[]
   shipment       Shipment?
   returns         Return[]
+  couponCode      String?     @map("coupon_code")
+  discountAmount  Float?      @map("discount_amount")
 
   @@map("orders")
 }
@@ -267,6 +269,7 @@ model Coupon {
   discountFixed   Float?    // Fixed amount instead of percentage
   minAmount       Float?    // Minimum order amount to apply coupon
   maxUses         Int?      // Null = unlimited
+  maxUsesPerUser  Int?      @default(1) // Null = unlimited per user
   usesCount       Int       @default(0)
   expiryDate      DateTime? @map("expiry_date")
   isActive        Boolean   @default(true) @map("is_active")
