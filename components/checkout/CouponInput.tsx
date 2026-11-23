@@ -8,8 +8,6 @@ import { Label } from '@/components/ui/label'
 export interface CouponInputProps {
   /** Current cart/order total, used to validate minimum order amount rules. */
   orderTotal: number
-  /** Authenticated user id, forwarded to the validation endpoint for per-user limits. */
-  userId: number
   /** Called whenever the applied discount changes so the parent can recompute the order total. */
   onDiscountChange: (discountAmount: number | null) => void
   /** Optional: called whenever the applied coupon code changes (null when removed/invalid), so the parent can submit it with the order. */
@@ -43,7 +41,7 @@ function reasonToMessage(reason?: InvalidReason): string {
   return REASON_MESSAGES[reason] ?? 'This coupon code is invalid'
 }
 
-export default function CouponInput({ orderTotal, userId, onDiscountChange, onCodeChange }: CouponInputProps) {
+export default function CouponInput({ orderTotal, onDiscountChange, onCodeChange }: CouponInputProps) {
   const [couponCode, setCouponCode] = useState('')
   const [discountAmount, setDiscountAmount] = useState<number | null>(null)
   const [error, setError] = useState('')
@@ -72,7 +70,7 @@ export default function CouponInput({ orderTotal, userId, onDiscountChange, onCo
       const res = await fetch('/api/coupons/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: trimmed, orderTotal, userId }),
+        body: JSON.stringify({ code: trimmed, orderTotal }),
       })
 
       if (!res.ok) {

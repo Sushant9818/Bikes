@@ -86,7 +86,7 @@ describe('Checkout integration: coupon applied at validate-time, persisted at or
 
     // Step 1 — customer types the code into CouponInput; it hits /api/coupons/validate.
     const validateRes = await validateCouponRoute(
-      makeValidateRequest({ code: 'SAVE10', orderTotal: 1000, userId: 1 }) as never
+      makeValidateRequest({ code: 'SAVE10', orderTotal: 1000 }) as never
     )
     const validateBody = await validateRes.json()
     expect(validateBody).toEqual({ valid: true, discountAmount: 100 })

@@ -209,7 +209,6 @@ export default function CheckoutPage() {
                     <div className="mb-6 p-4 border border-zinc-200 rounded-lg dark:border-zinc-700">
                       <CouponInput
                         orderTotal={totalPrice}
-                        userId={userId}
                         onDiscountChange={setDiscountAmount}
                         onCodeChange={setCouponCode}
                       />

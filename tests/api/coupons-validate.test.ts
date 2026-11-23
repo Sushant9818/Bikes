@@ -139,7 +139,7 @@ describe('POST /api/coupons/validate', () => {
   it('rejects unauthenticated callers', async () => {
     requireUserMock.mockRejectedValue(new ApiError(401, 'Not authenticated'))
 
-    const res = await POST(makeRequest({ code: 'SAVE10', orderTotal: 100, userId: 1 }) as never)
+    const res = await POST(makeRequest({ code: 'SAVE10', orderTotal: 100 }) as never)
 
     expect(res.status).toBe(401)
     expect(prisma.coupon.findUnique).not.toHaveBeenCalled()
@@ -157,7 +157,7 @@ describe('POST /api/coupons/validate', () => {
     requireUserMock.mockResolvedValue({ id: 1 })
     ;(prisma.coupon.findUnique as MockFn).mockResolvedValue(baseCoupon({ discountPercent: 10 }))
 
-    const res = await POST(makeRequest({ code: 'SAVE10', orderTotal: 999, userId: 1 }) as never)
+    const res = await POST(makeRequest({ code: 'SAVE10', orderTotal: 999 }) as never)
     const json = await res.json()
 
     expect(res.status).toBe(200)
@@ -168,9 +168,31 @@ describe('POST /api/coupons/validate', () => {
     requireUserMock.mockResolvedValue({ id: 1 })
     ;(prisma.coupon.findUnique as MockFn).mockResolvedValue(null)
 
-    const res = await POST(makeRequest({ code: 'NOPE', orderTotal: 100, userId: 1 }) as never)
+    const res = await POST(makeRequest({ code: 'NOPE', orderTotal: 100 }) as never)
     const json = await res.json()
 
     expect(json).toEqual({ valid: false, reason: 'NOT_FOUND' })
+  })
+
+  it('ignores a client-supplied userId and validates against the authenticated session user (IDOR regression)', async () => {
+    // The authenticated user (id 7) has already hit their per-user limit for
+    // this coupon. A malicious client tries to pass someone else's id (999)
+    // in the body to dodge that check — it must be ignored in favor of the
+    // session user returned by requireUser().
+    requireUserMock.mockResolvedValue({ id: 7 })
+    ;(prisma.coupon.findUnique as MockFn).mockResolvedValue(
+      baseCoupon({ maxUsesPerUser: 1 })
+    )
+    ;(prisma.order.count as MockFn).mockResolvedValue(1)
+
+    const res = await POST(
+      makeRequest({ code: 'SAVE10', orderTotal: 100, userId: 999 }) as never
+    )
+    const json = await res.json()
+
+    expect(prisma.order.count).toHaveBeenCalledWith({
+      where: { userId: 7, couponCode: 'SAVE10' },
+    })
+    expect(json).toEqual({ valid: false, reason: 'USER_LIMIT_REACHED' })
   })
 })

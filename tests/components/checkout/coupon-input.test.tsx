@@ -8,7 +8,7 @@ describe('CouponInput', () => {
   })
 
   it('renders the promo code input and apply button', () => {
-    render(<CouponInput orderTotal={1500} userId={1} onDiscountChange={vi.fn()} />)
+    render(<CouponInput orderTotal={1500} onDiscountChange={vi.fn()} />)
 
     expect(screen.getByLabelText(/Promo Code/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /apply/i })).toBeInTheDocument()
@@ -21,7 +21,7 @@ describe('CouponInput', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<CouponInput orderTotal={1500} userId={42} onDiscountChange={vi.fn()} />)
+    render(<CouponInput orderTotal={1500} onDiscountChange={vi.fn()} />)
 
     const input = screen.getByLabelText(/Promo Code/i)
     fireEvent.change(input, { target: { value: 'SAVE10' } })
@@ -34,7 +34,7 @@ describe('CouponInput', () => {
       expect.objectContaining({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: 'SAVE10', orderTotal: 1500, userId: 42 }),
+        body: JSON.stringify({ code: 'SAVE10', orderTotal: 1500 }),
       })
     )
   })
@@ -49,7 +49,7 @@ describe('CouponInput', () => {
     )
     const onDiscountChange = vi.fn()
 
-    render(<CouponInput orderTotal={1500} userId={1} onDiscountChange={onDiscountChange} />)
+    render(<CouponInput orderTotal={1500} onDiscountChange={onDiscountChange} />)
 
     const input = screen.getByLabelText(/Promo Code/i)
     fireEvent.change(input, { target: { value: 'SAVE10' } })
@@ -70,7 +70,7 @@ describe('CouponInput', () => {
     )
     const onDiscountChange = vi.fn()
 
-    render(<CouponInput orderTotal={1500} userId={1} onDiscountChange={onDiscountChange} />)
+    render(<CouponInput orderTotal={1500} onDiscountChange={onDiscountChange} />)
 
     const input = screen.getByLabelText(/Promo Code/i)
     fireEvent.change(input, { target: { value: 'OLDCODE' } })
@@ -91,7 +91,7 @@ describe('CouponInput', () => {
       })
     )
 
-    render(<CouponInput orderTotal={500} userId={1} onDiscountChange={vi.fn()} />)
+    render(<CouponInput orderTotal={500} onDiscountChange={vi.fn()} />)
 
     const input = screen.getByLabelText(/Promo Code/i)
     fireEvent.change(input, { target: { value: 'SAVE10' } })
@@ -103,7 +103,7 @@ describe('CouponInput', () => {
   it('handles network errors gracefully', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')))
 
-    render(<CouponInput orderTotal={1500} userId={1} onDiscountChange={vi.fn()} />)
+    render(<CouponInput orderTotal={1500} onDiscountChange={vi.fn()} />)
 
     const input = screen.getByLabelText(/Promo Code/i)
     fireEvent.change(input, { target: { value: 'SAVE10' } })
@@ -122,7 +122,7 @@ describe('CouponInput', () => {
     )
     const onDiscountChange = vi.fn()
 
-    render(<CouponInput orderTotal={1500} userId={1} onDiscountChange={onDiscountChange} />)
+    render(<CouponInput orderTotal={1500} onDiscountChange={onDiscountChange} />)
 
     const input = screen.getByLabelText(/Promo Code/i)
     fireEvent.change(input, { target: { value: 'SAVE20' } })
@@ -146,7 +146,7 @@ describe('CouponInput', () => {
       })
     )
 
-    render(<CouponInput orderTotal={1500} userId={1} onDiscountChange={vi.fn()} />)
+    render(<CouponInput orderTotal={1500} onDiscountChange={vi.fn()} />)
 
     const input = screen.getByLabelText(/Promo Code/i)
     fireEvent.change(input, { target: { value: 'BADCODE' } })
