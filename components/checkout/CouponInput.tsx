@@ -12,6 +12,8 @@ export interface CouponInputProps {
   userId: number
   /** Called whenever the applied discount changes so the parent can recompute the order total. */
   onDiscountChange: (discountAmount: number | null) => void
+  /** Optional: called whenever the applied coupon code changes (null when removed/invalid), so the parent can submit it with the order. */
+  onCodeChange?: (code: string | null) => void
 }
 
 type InvalidReason =
@@ -41,7 +43,7 @@ function reasonToMessage(reason?: InvalidReason): string {
   return REASON_MESSAGES[reason] ?? 'This coupon code is invalid'
 }
 
-export default function CouponInput({ orderTotal, userId, onDiscountChange }: CouponInputProps) {
+export default function CouponInput({ orderTotal, userId, onDiscountChange, onCodeChange }: CouponInputProps) {
   const [couponCode, setCouponCode] = useState('')
   const [discountAmount, setDiscountAmount] = useState<number | null>(null)
   const [error, setError] = useState('')
@@ -53,6 +55,7 @@ export default function CouponInput({ orderTotal, userId, onDiscountChange }: Co
     setApplied(false)
     setDiscountAmount(null)
     onDiscountChange(null)
+    onCodeChange?.(null)
   }
 
   const validateCoupon = async () => {
@@ -76,6 +79,7 @@ export default function CouponInput({ orderTotal, userId, onDiscountChange }: Co
         setApplied(false)
         setDiscountAmount(null)
         onDiscountChange(null)
+        onCodeChange?.(null)
         setError('Something went wrong while validating the coupon. Please try again.')
         return
       }
@@ -88,16 +92,19 @@ export default function CouponInput({ orderTotal, userId, onDiscountChange }: Co
         setApplied(true)
         setError('')
         onDiscountChange(amount)
+        onCodeChange?.(trimmed.toUpperCase())
       } else {
         setApplied(false)
         setDiscountAmount(null)
         onDiscountChange(null)
+        onCodeChange?.(null)
         setError(reasonToMessage(data.reason))
       }
     } catch {
       setApplied(false)
       setDiscountAmount(null)
       onDiscountChange(null)
+      onCodeChange?.(null)
       setError('Network error. Please check your connection and try again.')
     } finally {
       setLoading(false)
@@ -110,6 +117,7 @@ export default function CouponInput({ orderTotal, userId, onDiscountChange }: Co
     setApplied(false)
     setDiscountAmount(null)
     onDiscountChange(null)
+    onCodeChange?.(null)
   }
 
   return (
