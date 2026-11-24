@@ -10,6 +10,7 @@ export interface CartItem {
   partName: string
   price: number
   quantity: number
+  maxQuantity: number
 }
 
 interface CartContextValue {
@@ -17,7 +18,7 @@ interface CartContextValue {
   totalItems: number
   totalAmount: number
   addToCart: (part: Part) => void
-  updateQuantity: (partId: number, quantity: number) => void
+  updateQuantity: (partId: number, quantity: number, maxQty?: number) => void
   removeFromCart: (partId: number) => void
   clearCart: () => void
 }
@@ -31,7 +32,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(CART_STORAGE_KEY)
-      setItems(stored ? JSON.parse(stored) : [])
+      if (stored) {
+        const parsedItems = JSON.parse(stored) as CartItem[]
+        setItems(parsedItems)
+      }
     } catch {
       setItems([])
     }
@@ -45,18 +49,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items, hydrated])
 
   const addToCart = (part: Part) => {
+    const maxQty = part.quantity ?? 0
     setItems((prev) => {
       const existing = prev.find((item) => item.partId === part.id)
       if (existing) {
-        return prev.map((item) => (item.partId === part.id ? { ...item, quantity: item.quantity + 1 } : item))
+        const newQty = Math.min(existing.quantity + 1, maxQty)
+        return prev.map((item) => (item.partId === part.id ? { ...item, quantity: newQty, maxQuantity: maxQty } : item))
       }
-      return [...prev, { partId: part.id, partName: part.partName, price: part.price, quantity: 1 }]
+      return [...prev, { partId: part.id, partName: part.partName, price: part.price, quantity: 1, maxQuantity: maxQty }]
     })
   }
 
-  const updateQuantity = (partId: number, quantity: number) => {
+  const updateQuantity = (partId: number, quantity: number, maxQty?: number) => {
     if (quantity <= 0) { removeFromCart(partId); return }
-    setItems((prev) => prev.map((item) => (item.partId === partId ? { ...item, quantity } : item)))
+    setItems((prev) => prev.map((item) => {
+      if (item.partId === partId) {
+        const max = maxQty ?? item.maxQuantity
+        const clampedQty = Math.min(quantity, max)
+        return { ...item, quantity: clampedQty, maxQuantity: max }
+      }
+      return item
+    }))
   }
 
   const removeFromCart = (partId: number) => {
