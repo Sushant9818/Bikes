@@ -17,8 +17,11 @@ import { formatNPR } from '@/lib/currency'
 import StoreSelector from '@/components/checkout/StoreSelector'
 import TimeSlotSelector from '@/components/checkout/TimeSlotSelector'
 import CouponInput from '@/components/checkout/CouponInput'
+import { CreditCard, Wallet, Truck } from 'lucide-react'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? 'pk_test_placeholder')
+
+type PaymentMethod = 'card' | 'esewa' | 'khalti' | 'cash' | null
 
 interface CheckoutFormData {
   customerName: string
@@ -66,8 +69,10 @@ function PaymentForm({ totalAmount, onSuccess }: { totalAmount: number; onSucces
 export default function CheckoutPage() {
   const router = useRouter()
   const { items, totalAmount, clearCart } = useCart()
+  const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [step, setStep] = useState<'form' | 'payment'>('form')
+  const [step, setStep] = useState<'form' | 'payment-method' | 'payment'>('form')
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(null)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [formData, setFormData] = useState<CheckoutFormData>({ customerName: '', phone: '', email: '', address: '' })
   const [pickupLocation, setPickupLocation] = useState('')
@@ -76,6 +81,10 @@ export default function CheckoutPage() {
   const [userId, setUserId] = useState<number | null>(null)
   const [couponCode, setCouponCode] = useState<string | null>(null)
   const [discountAmount, setDiscountAmount] = useState<number | null>(null)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -96,9 +105,6 @@ export default function CheckoutPage() {
     e.preventDefault()
     if (items.length === 0) return
 
-    // If a coupon code was applied client-side but we somehow don't have a
-    // discount amount for it, don't let the customer pay the un-discounted
-    // price — make them re-apply (or remove) the coupon first.
     if (couponCode && discountAmount === null) {
       setError('Please re-apply your coupon code before continuing')
       return
@@ -129,13 +135,18 @@ export default function CheckoutPage() {
       return
     }
 
+    setError(null)
+    setStep('payment-method')
+  }
+
+  const handlePaymentMethodSelect = async (method: PaymentMethod) => {
+    if (!method) return
+    setPaymentMethod(method)
     setLoading(true)
     setError(null)
 
-    const res = await fetch('/api/payments/create-intent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    try {
+      const orderData = {
         customerName: formData.customerName,
         phone: formData.phone,
         email: formData.email || undefined,
@@ -145,24 +156,109 @@ export default function CheckoutPage() {
         items: items.map((item) => ({ partId: item.partId, quantity: item.quantity })),
         couponCode: couponCode ?? undefined,
         discountAmount: discountAmount ?? undefined,
-      }),
-    })
+        paymentMethod: method,
+      }
 
-    setLoading(false)
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}))
-      setError(body.message ?? 'Failed to create payment')
-      return
+      if (method === 'cash') {
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData),
+        })
+
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}))
+          setError(body.message ?? 'Failed to create order')
+          setLoading(false)
+          return
+        }
+
+        clearCart()
+        router.push('/checkout/success?redirect_status=succeeded&method=cash')
+      } else if (method === 'card') {
+        const res = await fetch('/api/payments/create-intent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData),
+        })
+
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}))
+          setError(body.message ?? 'Failed to create payment')
+          setLoading(false)
+          return
+        }
+
+        const body = await res.json()
+        setClientSecret(body.clientSecret)
+        setStep('payment')
+      } else if (method === 'esewa') {
+        const res = await fetch('/api/payments/esewa', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData),
+        })
+
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}))
+          setError(body.message ?? 'Failed to initiate Esewa payment')
+          setLoading(false)
+          return
+        }
+
+        const body = await res.json()
+        clearCart()
+        window.location.href = body.paymentUrl
+      } else if (method === 'khalti') {
+        const res = await fetch('/api/payments/khalti', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData),
+        })
+
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}))
+          setError(body.message ?? 'Failed to initiate Khalti payment')
+          setLoading(false)
+          return
+        }
+
+        const body = await res.json()
+        clearCart()
+        window.location.href = body.paymentUrl
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+      setLoading(false)
     }
-
-    const body = await res.json()
-    setClientSecret(body.clientSecret)
-    setStep('payment')
   }
 
   const onPaymentSuccess = () => {
     clearCart()
     router.push('/checkout/success?redirect_status=succeeded')
+  }
+
+  if (!mounted) {
+    return (
+      <>
+        <div className="py-12 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="animate-pulse">
+              <div className="h-10 bg-zinc-200 rounded mb-8 dark:bg-zinc-800" />
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-6">
+                  <div className="h-64 bg-zinc-200 rounded dark:bg-zinc-800" />
+                </div>
+                <div className="lg:col-span-1">
+                  <div className="h-48 bg-zinc-200 rounded sticky top-24 dark:bg-zinc-800" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </>
+    )
   }
 
   if (items.length === 0 && step === 'form') {
@@ -216,9 +312,71 @@ export default function CheckoutPage() {
                   )}
 
                   <Button type="submit" disabled={loading} size="lg" className="w-full bg-[#E60012] hover:bg-[#C5000F]">
-                    {loading ? 'Creating payment...' : 'Continue to Payment'}
+                    {loading ? 'Loading...' : 'Continue to Payment Method'}
                   </Button>
                 </form>
+              ) : step === 'payment-method' ? (
+                <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
+                  <h2 className="text-xl font-bold text-zinc-900 mb-6 dark:text-zinc-100">Select Payment Method</h2>
+                  {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => handlePaymentMethodSelect('card')}
+                      disabled={loading}
+                      className="w-full p-4 border-2 border-zinc-200 rounded-lg hover:border-[#E60012] hover:bg-red-50 dark:border-zinc-700 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3"
+                    >
+                      <CreditCard className="h-5 w-5 text-[#E60012]" />
+                      <div className="text-left">
+                        <p className="font-semibold text-zinc-900 dark:text-white">Credit/Debit Card</p>
+                        <p className="text-sm text-zinc-600 dark:text-zinc-400">Visa, Mastercard</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => handlePaymentMethodSelect('esewa')}
+                      disabled={loading}
+                      className="w-full p-4 border-2 border-zinc-200 rounded-lg hover:border-[#E60012] hover:bg-red-50 dark:border-zinc-700 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3"
+                    >
+                      <Wallet className="h-5 w-5 text-green-600" />
+                      <div className="text-left">
+                        <p className="font-semibold text-zinc-900 dark:text-white">Esewa</p>
+                        <p className="text-sm text-zinc-600 dark:text-zinc-400">Digital wallet payment</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => handlePaymentMethodSelect('khalti')}
+                      disabled={loading}
+                      className="w-full p-4 border-2 border-zinc-200 rounded-lg hover:border-[#E60012] hover:bg-red-50 dark:border-zinc-700 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3"
+                    >
+                      <Wallet className="h-5 w-5 text-purple-600" />
+                      <div className="text-left">
+                        <p className="font-semibold text-zinc-900 dark:text-white">Khalti</p>
+                        <p className="text-sm text-zinc-600 dark:text-zinc-400">Digital wallet payment</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => handlePaymentMethodSelect('cash')}
+                      disabled={loading}
+                      className="w-full p-4 border-2 border-zinc-200 rounded-lg hover:border-[#E60012] hover:bg-red-50 dark:border-zinc-700 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3"
+                    >
+                      <Truck className="h-5 w-5 text-blue-600" />
+                      <div className="text-left">
+                        <p className="font-semibold text-zinc-900 dark:text-white">Cash on Pickup</p>
+                        <p className="text-sm text-zinc-600 dark:text-zinc-400">Pay when you pick up your order</p>
+                      </div>
+                    </button>
+                  </div>
+
+                  <Button
+                    onClick={() => setStep('form')}
+                    variant="outline"
+                    className="w-full mt-4"
+                  >
+                    ← Back to Shipping
+                  </Button>
+                </div>
               ) : (
                 <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
                   <h2 className="text-xl font-bold text-zinc-900 mb-4 dark:text-zinc-100">Pay with Card</h2>
