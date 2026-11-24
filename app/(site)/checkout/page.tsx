@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
-import { useCart } from '@/components/cart/CartContext'
+import { useCart } from '@/cart/CartContext'
 import Footer from '@/components/Footer'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,7 +27,7 @@ interface CheckoutFormData {
   address: string
 }
 
-function PaymentForm({ totalPrice, onSuccess }: { totalPrice: number; onSuccess: () => void }) {
+function PaymentForm({ totalAmount, onSuccess }: { totalAmount: number; onSuccess: () => void }) {
   const stripe = useStripe()
   const elements = useElements()
   const [loading, setLoading] = useState(false)
@@ -57,7 +57,7 @@ function PaymentForm({ totalPrice, onSuccess }: { totalPrice: number; onSuccess:
       <PaymentElement />
       {error && <p className="text-red-600 text-sm">{error}</p>}
       <Button type="submit" disabled={!stripe || loading} size="lg" className="w-full bg-[#E60012] hover:bg-[#C5000F]">
-        {loading ? 'Processing...' : `Pay ${formatNPR(totalPrice)}`}
+        {loading ? 'Processing...' : `Pay ${formatNPR(totalAmount)}`}
       </Button>
     </form>
   )
@@ -65,7 +65,7 @@ function PaymentForm({ totalPrice, onSuccess }: { totalPrice: number; onSuccess:
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { items, totalPrice, clearCart } = useCart()
+  const { items, totalAmount, clearCart } = useCart()
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState<'form' | 'payment'>('form')
   const [clientSecret, setClientSecret] = useState<string | null>(null)
@@ -90,7 +90,7 @@ export default function CheckoutPage() {
     }
   }, [])
 
-  const finalTotal = Math.max(0, totalPrice - (discountAmount ?? 0))
+  const finalTotal = Math.max(0, totalAmount - (discountAmount ?? 0))
 
   const onFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -208,7 +208,7 @@ export default function CheckoutPage() {
                   {userId !== null && (
                     <div className="mb-6 p-4 border border-zinc-200 rounded-lg dark:border-zinc-700">
                       <CouponInput
-                        orderTotal={totalPrice}
+                        orderTotal={totalAmount}
                         onDiscountChange={setDiscountAmount}
                         onCodeChange={setCouponCode}
                       />
@@ -224,7 +224,7 @@ export default function CheckoutPage() {
                   <h2 className="text-xl font-bold text-zinc-900 mb-4 dark:text-zinc-100">Pay with Card</h2>
                   {clientSecret && (
                     <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe', variables: { colorPrimary: '#E60012' } } }}>
-                      <PaymentForm totalPrice={finalTotal} onSuccess={onPaymentSuccess} />
+                      <PaymentForm totalAmount={finalTotal} onSuccess={onPaymentSuccess} />
                     </Elements>
                   )}
                 </div>
